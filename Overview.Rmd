@@ -3,12 +3,12 @@ title: "An overview of the different type of graphics"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
+  html_notebook: default
   pdf_document: default
 ---
 
@@ -16,40 +16,131 @@ output:
 # My colors:
 SIAP.color <- "#0385a8"
 
+```
+
+```{r}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+
+```
+
+
+
+## Data sets
+
+```{r, SDGData}
+
+# ---  SDGs Data --- 
+SDGdata<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
+
+SDGdata$Poverty <- as.numeric(SDGdata$Value)
 
 ```
 
 
 # Univariate numerical data
 
-## Data
+
 ```{r}
-library(tidyverse)
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty) +
+ geom_histogram(bins = 39L, fill = SIAP.color) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+```
 
 
-# Load dataset from github
-data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/1_OneNum.csv", header=TRUE)
 
-# plot
-p <- data %>%
-  filter( price<300 ) %>%
-  ggplot( aes(x=price)) +
-    geom_histogram( binwidth=3, fill=SIAP.color, color=SIAP.color, alpha=0.9) +
-    ggtitle("Bin size = 3") +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size=15)
-    )
-p
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty) +
+    geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+
+```
+
+
+
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty) +
+    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+```
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty, y ="") +
+    geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+    geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+```
+
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty, y ="") +
+    geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+```
+
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty, y ="") +
+    geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+```
+
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty, y ="") +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
+```
+
+```{r}
+ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ aes(x = Poverty) +
+    geom_rug(color=SIAP.color, size=0.9, alpha=0.7) +
+  ggtitle("Proportion of population below international poverty line (%)")+
+ theme_tufte()
+
 ```
 
 
 # Univariate numerical data by categories (ordered or not)
 
 ```{r}
-library(tidyverse)
-library(viridis)
+SDGdata %>%
+ filter(Sex %in% c("MALE", "FEMALE")) %>%
+ ggplot() +
+ aes(x = "", y = Poverty, group = Sex) +
+ geom_boxplot(fill = "#0c4c8a") +
+ #labs(x = "Countries", y = "Pove", caption = "only....") +
+  coord_flip()+
+ theme_minimal()
+```
 
+
+
+
+
+```{r}
 # create a dataset
 data <- data.frame(
   name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
@@ -90,12 +181,6 @@ ggplot(diamonds, aes(x = price, y = cut, fill = cut)) +
 
 
 ```{r}
-# library
-library(ggridges)
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(forcats)
 
 # Load dataset from github
 data <- read.table("https://raw.githubusercontent.com/zonination/perceptions/master/probly.csv", header=TRUE, sep=",")
