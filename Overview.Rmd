@@ -12,6 +12,12 @@ output:
   pdf_document: default
 ---
 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =FALSE, echo = TRUE) 
+
+```
+
 ```{r}
 # My colors:
 SIAP.color <- "#0385a8"
@@ -25,10 +31,10 @@ library(viridis)
 library(ggthemes)
 library(ggplot2)
 library(forcats)
+library(knitr)
+library(kableExtra)
 
 ```
-
-
 
 ## Data sets
 
@@ -38,89 +44,110 @@ library(forcats)
 SDGdata<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
 
 SDGdata$Poverty <- as.numeric(SDGdata$Value)
-
+MyDataPov <- subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )
+MyDataPov.caption <- paste("Proportion of population below international
+                           poverty line (%)- Obs. 1-9/", nrow(MyDataPov))
 ```
+
+
+```{r table}
+ t <-  kbl(MyDataPov[1:9,
+                     c("Indicator","Age", "Poverty", "TimePeriod" )],
+           caption = MyDataPov.caption
+)  
+
+kable_styling(t)
+```
+
+
 
 
 # Univariate numerical data
 
-
 ```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty) +
- geom_histogram(bins = 39L, fill = SIAP.color) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-```
-
-
-
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty) +
-    geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-
-
-```
-
-
-
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty) +
-    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-
-```
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty, y ="") +
-    geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
-    geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-
-```
-
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty, y ="") +
-    geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
-    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-
-```
-
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ggplot(data= MyDataPov) +
  aes(x = Poverty, y ="") +
     geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
-  ggtitle("Proportion of population below international poverty line (%)")+
+   ggtitle("Points (raw values)")+ 
+  xlab(MyDataPov.caption)+
  theme_tufte()
 
 ```
 
-```{r}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
- aes(x = Poverty, y ="") +
-    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
-  ggtitle("Proportion of population below international poverty line (%)")+
- theme_tufte()
-
-```
-
-```{r}
+```{r rug}
 ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
  aes(x = Poverty) +
     geom_rug(color=SIAP.color, size=0.9, alpha=0.7) +
-  ggtitle("Proportion of population below international poverty line (%)")+
+   ggtitle("Rug plot")+ 
+  xlab(MyDataPov.caption)+
  theme_tufte()
 
 ```
+
+
+```{r jitter }
+ggplot(data= MyDataPov) +
+ aes(x = Poverty, y ="") +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
+   ggtitle("Points (jitter)")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+
+```
+
+
+```{r boxplot}
+ggplot(data= MyDataPov) +
+ aes(x = Poverty) +
+    geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+  ggtitle("Boxplot (Box-and-Whiskers")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+```
+
+
+```{r}
+ggplot(data= MyDataPov) +
+ aes(x = Poverty, y ="") +
+    geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
+   ggtitle("Boxplot and points (jittered)")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+
+```
+
+```{r histogram}
+ggplot(data= MyDataPov) +
+ aes(x = Poverty) +
+ geom_histogram(bins = 39L, fill = SIAP.color) +
+   ggtitle("Histogram")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+```
+
+
+```{r density }
+ggplot(data= MyDataPov) +
+ aes(x = Poverty) +
+    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+   ggtitle("Density estimate")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+
+```
+
+```{r densityrug}
+ggplot(data= MyDataPov) +
+ aes(x = Poverty) +
+    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+    geom_rug(color=SIAP.color, size=0.9, alpha=0.7) +
+   ggtitle("Density estimate + rug")+ 
+  xlab(MyDataPov.caption)+
+ theme_tufte()
+
+```
+
 
 
 # Univariate numerical data by categories (ordered or not)
