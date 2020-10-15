@@ -453,7 +453,13 @@ SDGdata3$Maternal <- as.numeric(SDGdata3$Value)
 
 SDGMatPov <- merge(SDGdata3, SDGPov, by = c("GeoAreaName", "TimePeriod" ))
 
-SDGMatPov$Age <- as.numeric(SDGMatPov$Age.x)
+# Creating and Age variable
+
+SDGMatPov <- SDGMatPov %>%
+  mutate( Age = str_sub(Age.y, 1,2),  #Take the lower bound of the interval
+          Age = as.numeric(Age)
+  )
+
 
 Maternal.label <- SDGdata3$SeriesDescription[1]
 Poverty.label.full <- SDGPov$SeriesDescription[1]
@@ -475,17 +481,12 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
 
 ## Bubble chart
 
-```{r}
+```{r Bubble}
+library(stringr)
 
-
-SDGMatPov <- SDGMatPov %>%
-  mutate(
-    Ag = as.numeric(Age.y)
-  )
-
-ggplot(SDGMatPov, aes(x=Poverty, y= Maternal, size = Age.x )) +
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal, size = Age)) +
   geom_point(color = SIAP.color, alpha = 0.5) +
-  ggtitle("Simple Scatter plot") +
+  ggtitle("Bubble plot") +
   xlab(Poverty.label)+
   ylab(Maternal.label)+
        theme_minimal()
@@ -493,6 +494,71 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal, size = Age.x )) +
 ```
 
 
+```{r histogram2D}
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
+         geom_bin2d(bins = 10) +
+         scale_fill_continuous(type = "viridis") +
+         theme_bw()+
+  ggtitle("2D- Histogram plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+```
 
 
+```{r Density2D}
 
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
+ stat_density_2d(aes(fill = ..level..), geom = "polygon", colour="white") +
+  ggtitle("2D- Density plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+```
+
+## Time series
+
+> The goal is to see an evolution....
+
+```{r lineplot}
+SDGMatPov.Time <- SDGMatPov %>%
+  filter(GeoAreaName=="Brazil") %>%
+  group_by(TimePeriod) %>%
+  summarize(
+    MatYear = mean(Maternal),
+    PovYear = mean(Poverty)
+  )
+toto <- subset(SDGMatPov, GeoAreaName=="Brazil")
+
+
+ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
+#ggplot(toto, aes(x=TimePeriod, y= Poverty)) +
+  geom_line(color = SIAP.color, alpha = 0.5) +
+  ggtitle("Line plot ") +
+  xlab("Time")+
+  ylab(Poverty.label)+
+       theme_minimal()
+```
+
+
+```{r connectedline}
+ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
+  geom_line(color = SIAP.color, alpha = 0.5) +
+  geom_point(color = SIAP.color, alpha = 0.5)+
+  ggtitle("Connected Line plot ") +
+  xlab("Time")+
+  ylab(Poverty.label)+
+       theme_minimal()
+```
+
+```{r area}
+ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
+  geom_line(color = SIAP.color, alpha = 0.5) +
+  geom_area(color = SIAP.color, alpha = 0.2)+
+  ggtitle("Area plot ") +
+  xlab("Time")+
+  ylab(Poverty.label)+
+       theme_minimal()
+```
