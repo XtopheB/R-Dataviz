@@ -16,15 +16,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =FALSE, echo = TRUE) 
 
-```
-
-```{r}
 # My colors:
 SIAP.color <- "#0385a8"
 
 ```
 
-```{r}
+```{r libraries}
 library(readxl)
 library(tidyverse)
 library(viridis)
@@ -36,24 +33,43 @@ library(kableExtra)
 
 ```
 
-## Data sets
+## Data sets {-}
 
-```{r, SDGData}
+```{r SDGData}
 
 # ---  SDGs Data --- 
-SDGdata<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
 
-SDGdata$Poverty <- as.numeric(SDGdata$Value)
-MyDataPov <- subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )
-MyDataPov.caption <- paste("Proportion of population below international
-                           poverty line (%)- Obs. 1-9/", nrow(MyDataPov))
+# Data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO
+# Only countries with letters A-C selected to avoid uneccessary heavy files
+
+SDGdata1<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
+
+SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
+SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
+SDGPov.caption <- paste("Proportion of population below international
+                           poverty line (%)- Obs. 1-9/", nrow(SDGPov))
+
+# --- Here we create a dataset
+set.seed(2512)
+MyDataNumCat <- data.frame(
+  Country=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+  Poverty=c( rnorm(500, 20, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+#  Avg by category 
+MyDataNumCatAvg <- MyDataNumCat %>%
+  group_by(Country) %>%
+  summarize(
+    Poverty.Avg = mean(Poverty)
+  )
+
 ```
 
 
 ```{r table}
- t <-  kbl(MyDataPov[1:9,
+ t <-  kbl(SDGPov[1:9,
                      c("Indicator","Age", "Poverty", "TimePeriod" )],
-           caption = MyDataPov.caption
+           caption = SDGPov.caption
 )  
 
 kable_styling(t)
@@ -62,180 +78,295 @@ kable_styling(t)
 
 
 
-# Univariate numerical data
+# Visualizing one variable
 
 ```{r}
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
     geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
    ggtitle("Points (raw values)")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
 
 ```{r rug}
-ggplot(data= subset(SDGdata, Poverty >5 & Sex =="BOTHSEX" )) +
+ggplot(data= SDGPov) +
  aes(x = Poverty) +
-    geom_rug(color=SIAP.color, size=0.9, alpha=0.7) +
+    geom_rug(color=SIAP.color, size=0.9, alpha=0.7, 
+             length = unit(0.2, "npc")) +
    ggtitle("Rug plot")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
 
 
 ```{r jitter }
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
-    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9,  height = 0.1 ) +
    ggtitle("Points (jitter)")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
+
+### Box-and-Whiskers or Boxplot {-}
+
+
+> The **box and whiskers** or **Boxplot** is basically a **sumary** of the variable in **5 numbers**
+
+* The median (or 50% quantile)
+* The lower (Q1) and upper (Q2) quartiles 
+* The lower and upper *whiskers*
+
+![](../Graphics/M1-BoxPlotDef.jpg)
+From [R. Strahl](https://waterdata.usgs.gov/blog/boxplots/)
+
+```{r boxplot0}
+ggplot(data= SDGPov) +
+ aes(x = Poverty) +
+    geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+  coord_flip() +
+   ggtitle("Boxplot (Box-and-Whiskers)")+ 
+  xlab(SDGPov.caption)+
+ theme_tufte()
+```
+
 
 
 ```{r boxplot}
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
   ggtitle("Boxplot (Box-and-Whiskers")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 ```
 
 
+```{r boxplot2}
+ggplot(data= SDGPov) +
+ aes(x = Poverty) +
+    geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2,
+                  outlier.colour = "red", outlier.alpha = 0.3) +
+  ggtitle("Horizontal Boxplot (Box-and-Whiskers)")+ 
+  xlab(SDGPov.caption)+
+ theme_tufte()
+```
+
 ```{r}
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
     geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
     geom_jitter(color=SIAP.color, size=0.9, alpha=0.9, width = 0.2 ) +
-   ggtitle("Boxplot and points (jittered)")+ 
-  xlab(MyDataPov.caption)+
+   ggtitle("Horizontal Boxplot with points (jittered)")+ 
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
 
 ```{r histogram}
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty) +
  geom_histogram(bins = 39L, fill = SIAP.color) +
    ggtitle("Histogram")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 ```
 
 
 ```{r density }
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
    ggtitle("Density estimate")+ 
-  xlab(MyDataPov.caption)+
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
 
 ```{r densityrug}
-ggplot(data= MyDataPov) +
+ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
     geom_rug(color=SIAP.color, size=0.9, alpha=0.7) +
-   ggtitle("Density estimate + rug")+ 
-  xlab(MyDataPov.caption)+
+   ggtitle("Density estimate and rug")+ 
+  xlab(SDGPov.caption)+
  theme_tufte()
 
 ```
 
+## Categorical data
 
-
-# Univariate numerical data by categories (ordered or not)
 
 ```{r}
-SDGdata %>%
- filter(Sex %in% c("MALE", "FEMALE")) %>%
- ggplot() +
- aes(x = "", y = Poverty, group = Sex) +
- geom_boxplot(fill = "#0c4c8a") +
- #labs(x = "Countries", y = "Pove", caption = "only....") +
-  coord_flip()+
- theme_minimal()
+t2 <- kable(MyDataNumCatAvg)
+kable_styling(t2)
 ```
 
 
 
 
+```{r barplot}
+# Barplot
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
+  geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
+  ggtitle("Barplot")+ 
+  xlab("Index by country") + 
+  theme_minimal()
+```
 
-```{r}
-# create a dataset
-data <- data.frame(
-  name=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
-  value=c( rnorm(500, 10, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
-)
 
+
+```{r barplotflip}
+# Barplot
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
+  geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
+  coord_flip()+
+  ggtitle("Horizontal Barplot")+ 
+  xlab("Index by country") + 
+  theme_minimal()
+```
+
+> One may also wish to reorder the bars to facilitate the comparison 
+see [Yan holtz page on reodering with R](https://www.r-graph-gallery.com/267-reorder-a-variable-in-ggplot2.html)
+
+
+
+```{r barplotfliporder}
+# Reordering the bars 
+MyDataNumCatAvg2 <- MyDataNumCatAvg
+MyDataNumCatAvg2$Country <- with(MyDataNumCatAvg2, reorder(Country, Poverty.Avg, max ))
+
+ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) + 
+  geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
+  coord_flip()+
+  ggtitle("Horizontal Barplot (ordered)")+ 
+  xlab("Index by country") + 
+  theme_minimal()
+```
+
+
+```{r lollipop}
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
+  geom_point(color=SIAP.color, size= 3,  alpha=0.9) + 
+  geom_segment( aes(x=Country, xend=Country, y=0, yend=Poverty.Avg), color=SIAP.color) +
+  ggtitle("Lollipop plot")+ 
+  theme_minimal()
+```
+
+
+## Univariate numerical data by categories (ordered or not)
+
+
+```{r multibox}
 # Plot
-data %>%
-  ggplot( aes(x=name, y=value, fill=name)) +
+MyDataNumCat %>%
+  ggplot( aes(x=Country, y=Poverty, fill=Country)) +
   geom_boxplot() +
-  scale_fill_viridis(discrete = TRUE, alpha=0.6) +
-  geom_jitter(color="black", size=0.4, alpha=0.9) +
   theme(
     legend.position="none",
     plot.title = element_text(size=11)
   ) +
+  coord_flip() +
   theme_minimal()+
-  ggtitle("A boxplot with jitter") +
+  ggtitle("Boxplot by category (countries)") +
   xlab("")
 
 ```
 
 
-
-```{r}
-# library
-library(ggridges)
-
-# Diamonds dataset is provided by R natively
-#head(diamonds)
-
-# basic example
-ggplot(diamonds, aes(x = price, y = cut, fill = cut)) +
-  geom_density_ridges() +
-  theme_ridges() + 
-  theme(legend.position = "none")
-```
-
-
-```{r}
-
-# Load dataset from github
-data <- read.table("https://raw.githubusercontent.com/zonination/perceptions/master/probly.csv", header=TRUE, sep=",")
-data <- data %>% 
-  gather(key="text", value="value") %>%
-  mutate(text = gsub("\\.", " ",text)) %>%
-  mutate(value = round(as.numeric(value),0)) %>%
-  filter(text %in% c("Almost Certainly","Very Good Chance","We Believe","Likely","About Even", "Little Chance", "Chances Are Slight", "Almost No Chance"))
-
+```{r multiboxJitter}
 # Plot
-data %>%
-  mutate(text = fct_reorder(text, value)) %>%
-  ggplot( aes(y=text, x=value,  fill=text)) +
-  geom_density_ridges(alpha=0.6, stat="binline", bins=20) +
-  theme_ridges() +
+MyDataNumCat %>%
+  ggplot( aes(x=Country, y=Poverty, fill=Country)) +
+  geom_boxplot() +
+  geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
   theme(
     legend.position="none",
-    panel.spacing = unit(0.1, "lines"),
-    strip.text.x = element_text(size = 8)
+    plot.title = element_text(size=11)
   ) +
-  xlab("") +
-  ylab("Assigned Probability (%)")
+  coord_flip() +
+  theme_minimal()+
+  ggtitle("Boxplot by category (countries) with jitter") +
+  xlab("")
 
+```
+
+Here we are interested by the shape of the distribution, and by comparing the distributions between countries. 
+
+```{r ridgehisto}
+library(ggridges)
+# Plot
+  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  geom_density_ridges(stat="binline", bins=20) +
+  theme_ridges() +
+  theme(legend.position = "none")+
+  ggtitle("Histogram by category (countries)") +
+  xlab("Poverty")
 
 ```
 
 
-# Univariate numerical data with an categorical order
+
+```{r ridgehistojitter}
+library(ggridges)
+# Plot
+  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  geom_density_ridges(stat="binline", bins=20) +
+  geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
+  theme_ridges() +
+  theme(legend.position = "none")+
+  ggtitle("Histogram by category (countries) with jitter ") +
+  xlab("Poverty")
+
+```
+
+```{r ridge}
+library(ggridges)
+# Plot
+  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  geom_density_ridges() +
+  theme_ridges() +
+  theme(legend.position = "none")+
+  ggtitle("Density by category (countries) ") +
+  xlab("Poverty")
+
+```
+
+
+```{r ridgejitter}
+library(ggridges)
+# Plot
+  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  geom_density_ridges() +
+  geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
+  theme_ridges() +
+  theme(legend.position = "none")+
+  ggtitle("Density by category (countries) with jitter ") +
+  xlab("Poverty")
+
+```
+
+
+
+```{r violin}
+
+# Plot
+  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  geom_violin() +
+  theme_minimal() +
+  theme(legend.position = "none")+
+  ggtitle("Violin plot by category (countries)") +
+  xlab("Poverty")
+
+```
+
+
+
+## Univariate numerical data with a categorical order
 
 ```{r}
 library(ggridges)
@@ -247,12 +378,121 @@ library(viridis)
 ggplot(lincoln_weather, aes(x = `Mean Temperature [F]`, y = `Month`, fill = ..x..)) +
   geom_density_ridges_gradient(scale = 3, rel_min_height = 0.01) +
   scale_fill_viridis(name = "Temp. [F]", option = "C") +
-  labs(title = 'Temperatures in Lincoln NE in 2016') +
-  #theme_ipsum() +
+  labs(title = 'Temperatures in a country for a given year') +
+  theme_minimal() +
     theme(
       legend.position="none",
       panel.spacing = unit(0.1, "lines"),
       strip.text.x = element_text(size = 8)
     )
 ```
+
+
+# Proportions
+
+```{r Piechart}
+# Basic piechart
+ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)+
+  ggtitle("Piechart") +
+  theme_void() 
+
+```
+
+```{r stackedbar}
+# Basic piechart
+ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
+  geom_bar(stat="identity", width=0.2) +
+  coord_flip()+
+  ggtitle("Horizontal stackbar") +
+  theme_void()   
+ 
+```
+
+
+```{r stackedbarordered}
+# Basic piechart
+ggplot(MyDataNumCatAvg2, aes(x="", y=Poverty.Avg, fill=Country)) +
+  geom_bar(stat="identity", width=0.2) +
+  coord_flip()+
+  ggtitle("Horizontal stackbar (ordered)") +
+  theme_void()   
+ 
+```
+
+```{r}
+library(treemap)
+ 
+# Create data
+group <- c("group-1","group-2","group-3")
+value <- c(13,5,22)
+data <- data.frame(group,value)
+ 
+# treemap
+treemap(MyDataNumCatAvg,
+            index="Country",vSize="Poverty.Avg",
+            type="index", 
+            palette = "Set1",  
+            title="A Treemap"                      
+            )
+```
+
+# Visualizing two  variables 
+
+> The goal is to **visualize relationships**
+
+## Data
+
+```{r SDGMaternal}
+# ---  SDGs Data --- 
+SDGdata3<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE,
+                             sheet = "Goal3")
+
+SDGdata3$Maternal <- as.numeric(SDGdata3$Value)
+
+SDGMatPov <- merge(SDGdata3, SDGPov, by = c("GeoAreaName", "TimePeriod" ))
+
+SDGMatPov$Age <- as.numeric(SDGMatPov$Age.x)
+
+Maternal.label <- SDGdata3$SeriesDescription[1]
+Poverty.label.full <- SDGPov$SeriesDescription[1]
+Poverty.label <- "Prop. of pop.  below poverty line (%)"
+
+```
+
+
+## Scatter plot 
+
+```{r scatter}
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Simple Scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+## Bubble chart
+
+```{r}
+
+
+SDGMatPov <- SDGMatPov %>%
+  mutate(
+    Ag = as.numeric(Age.y)
+  )
+
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal, size = Age.x )) +
+  geom_point(color = SIAP.color, alpha = 0.5) +
+  ggtitle("Simple Scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+```
+
+
+
+
 
