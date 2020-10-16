@@ -66,7 +66,7 @@ MyDataNumCatAvg <- MyDataNumCat %>%
 ```
 
 
-```{r table}
+```{r Table}
  t <-  kbl(SDGPov[1:9,
                      c("Indicator","Age", "Poverty", "TimePeriod" )],
            caption = SDGPov.caption
@@ -80,7 +80,7 @@ kable_styling(t)
 
 # Visualizing one variable
 
-```{r}
+```{r Point}
 ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
     geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
@@ -90,19 +90,21 @@ ggplot(data= SDGPov) +
 
 ```
 
-```{r rug}
+```{r Rug}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_rug(color=SIAP.color, size=0.9, alpha=0.7, 
              length = unit(0.2, "npc")) +
    ggtitle("Rug plot")+ 
   xlab(SDGPov.caption)+
- theme_tufte()
+ theme_tufte() 
+ 
+  
 
 ```
 
 
-```{r jitter }
+```{r Jitter }
 ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
     geom_jitter(color=SIAP.color, size=0.9, alpha=0.9,  height = 0.1 ) +
@@ -124,7 +126,7 @@ ggplot(data= SDGPov) +
 ![](../Graphics/M1-BoxPlotDef.jpg)
 From [R. Strahl](https://waterdata.usgs.gov/blog/boxplots/)
 
-```{r boxplot0}
+```{r Boxplot0}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
@@ -136,7 +138,7 @@ ggplot(data= SDGPov) +
 
 
 
-```{r boxplot}
+```{r Boxplot}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
@@ -146,7 +148,7 @@ ggplot(data= SDGPov) +
 ```
 
 
-```{r boxplot2}
+```{r BoxplotOutliers}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_boxplot( fill=SIAP.color,color=SIAP.color, alpha=0.2,
@@ -156,7 +158,7 @@ ggplot(data= SDGPov) +
  theme_tufte()
 ```
 
-```{r}
+```{r BoxplotJitter}
 ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
     geom_boxplot(fill=SIAP.color,color=SIAP.color, alpha=0.2) +
@@ -167,7 +169,7 @@ ggplot(data= SDGPov) +
 
 ```
 
-```{r histogram}
+```{r Histogram}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
  geom_histogram(bins = 39L, fill = SIAP.color) +
@@ -177,7 +179,7 @@ ggplot(data= SDGPov) +
 ```
 
 
-```{r density }
+```{r Density }
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
@@ -187,7 +189,7 @@ ggplot(data= SDGPov) +
 
 ```
 
-```{r densityrug}
+```{r Densityrug}
 ggplot(data= SDGPov) +
  aes(x = Poverty) +
     geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
@@ -201,7 +203,7 @@ ggplot(data= SDGPov) +
 ## Categorical data
 
 
-```{r}
+```{r TableCat}
 t2 <- kable(MyDataNumCatAvg)
 kable_styling(t2)
 ```
@@ -209,7 +211,7 @@ kable_styling(t2)
 
 
 
-```{r barplot}
+```{r Barplot}
 # Barplot
 ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
@@ -220,7 +222,7 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
 
 
 
-```{r barplotflip}
+```{r Barplotflip}
 # Barplot
 ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
@@ -235,7 +237,7 @@ see [Yan holtz page on reodering with R](https://www.r-graph-gallery.com/267-reo
 
 
 
-```{r barplotfliporder}
+```{r Barplotfliporder}
 # Reordering the bars 
 MyDataNumCatAvg2 <- MyDataNumCatAvg
 MyDataNumCatAvg2$Country <- with(MyDataNumCatAvg2, reorder(Country, Poverty.Avg, max ))
@@ -247,9 +249,25 @@ ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) +
   xlab("Index by country") + 
   theme_minimal()
 ```
+```{r CircularBar}
+ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) + 
+  geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
+  # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
+ coord_polar(start = 0) +
+  ggtitle("Circular Barplot")+ 
+  xlab("Index by country")+
+  # Custom the theme: no axis title and no cartesian grid
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-2,4), "cm") 
+  ) 
+```
 
 
-```{r lollipop}
+```{r Lollipop}
 ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
   geom_point(color=SIAP.color, size= 3,  alpha=0.9) + 
   geom_segment( aes(x=Country, xend=Country, y=0, yend=Poverty.Avg), color=SIAP.color) +
@@ -261,7 +279,7 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
 ## Univariate numerical data by categories (ordered or not)
 
 
-```{r multibox}
+```{r Multibox}
 # Plot
 MyDataNumCat %>%
   ggplot( aes(x=Country, y=Poverty, fill=Country)) +
@@ -278,7 +296,7 @@ MyDataNumCat %>%
 ```
 
 
-```{r multiboxJitter}
+```{r MultiboxJitter}
 # Plot
 MyDataNumCat %>%
   ggplot( aes(x=Country, y=Poverty, fill=Country)) +
@@ -297,7 +315,7 @@ MyDataNumCat %>%
 
 Here we are interested by the shape of the distribution, and by comparing the distributions between countries. 
 
-```{r ridgehisto}
+```{r Ridgehisto}
 library(ggridges)
 # Plot
   ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
@@ -311,7 +329,7 @@ library(ggridges)
 
 
 
-```{r ridgehistojitter}
+```{r Ridgehistojitter}
 library(ggridges)
 # Plot
   ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
@@ -324,7 +342,7 @@ library(ggridges)
 
 ```
 
-```{r ridge}
+```{r Ridge}
 library(ggridges)
 # Plot
   ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
@@ -337,7 +355,7 @@ library(ggridges)
 ```
 
 
-```{r ridgejitter}
+```{r Ridgejitter}
 library(ggridges)
 # Plot
   ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
@@ -352,7 +370,7 @@ library(ggridges)
 
 
 
-```{r violin}
+```{r Violin}
 
 # Plot
   ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
@@ -368,7 +386,7 @@ library(ggridges)
 
 ## Univariate numerical data with a categorical order
 
-```{r}
+```{r RidgeDensity}
 library(ggridges)
 library(ggplot2)
 library(viridis)
@@ -400,7 +418,7 @@ ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
 
 ```
 
-```{r stackedbar}
+```{r Stackedbar}
 # Basic piechart
 ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
   geom_bar(stat="identity", width=0.2) +
@@ -411,7 +429,7 @@ ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
 ```
 
 
-```{r stackedbarordered}
+```{r Stackedbarordered}
 # Basic piechart
 ggplot(MyDataNumCatAvg2, aes(x="", y=Poverty.Avg, fill=Country)) +
   geom_bar(stat="identity", width=0.2) +
@@ -421,7 +439,7 @@ ggplot(MyDataNumCatAvg2, aes(x="", y=Poverty.Avg, fill=Country)) +
  
 ```
 
-```{r}
+```{r Treemap}
 library(treemap)
  
 # Create data
@@ -470,7 +488,7 @@ Poverty.label <- "Prop. of pop.  below poverty line (%)"
 
 ## Scatter plot 
 
-```{r scatter}
+```{r Scatter}
 ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
   geom_point(color = SIAP.color) +
   ggtitle("Simple Scatter plot") +
@@ -494,7 +512,7 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal, size = Age)) +
 ```
 
 
-```{r histogram2D}
+```{r Histogram2D}
 ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
          geom_bin2d(bins = 10) +
          scale_fill_continuous(type = "viridis") +
@@ -522,7 +540,7 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
 
 > The goal is to see an evolution....
 
-```{r lineplot}
+```{r Lineplot}
 SDGMatPov.Time <- SDGMatPov %>%
   filter(GeoAreaName=="Brazil") %>%
   group_by(TimePeriod) %>%
@@ -530,7 +548,6 @@ SDGMatPov.Time <- SDGMatPov %>%
     MatYear = mean(Maternal),
     PovYear = mean(Poverty)
   )
-toto <- subset(SDGMatPov, GeoAreaName=="Brazil")
 
 
 ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
@@ -543,7 +560,7 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
 ```
 
 
-```{r connectedline}
+```{r Connectedline}
 ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
   geom_line(color = SIAP.color, alpha = 0.5) +
   geom_point(color = SIAP.color, alpha = 0.5)+
@@ -553,12 +570,41 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
        theme_minimal()
 ```
 
-```{r area}
-ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
-  geom_line(color = SIAP.color, alpha = 0.5) +
-  geom_area(color = SIAP.color, alpha = 0.2)+
+```{r Area}
+# geom_area start at 0, so we use  geom_ribbon (with ymax in the aes)
+ggplot(SDGMatPov.Time, aes(x=TimePeriod, ymax= PovYear)) +
+  geom_line(aes(x=TimePeriod, y= PovYear), color = SIAP.color) +
+  geom_ribbon(aes(ymin = 5.2), fill = SIAP.color, alpha = 0.3) +  
+  geom_point(aes(x=TimePeriod, y= PovYear),color = SIAP.color, alpha = 0.5)+
   ggtitle("Area plot ") +
   xlab("Time")+
+#  ylim(5.5, NA)+
   ylab(Poverty.label)+
        theme_minimal()
 ```
+
+## Stacked area chart
+
+> These charts are for specific data types 
+
+```{r StackedArea}
+# create data
+set.seed(2512)
+time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=7) ) # x Axis
+value <- runif(49, 10, 100)               # y Axis
+country <- paste("Country", rep(LETTERS[1:7],times=7))# group, one shape per group
+MyDataArea <- data.frame(time, value, country)
+
+
+# stacked area chart
+ggplot(MyDataArea, aes(x=time, y=value, fill=country)) + 
+    geom_area(alpha=0.6 , size=.5, colour="white") +
+    ggtitle("Stacked Area plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylab("Population below poverty line ")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"))
+```
+
