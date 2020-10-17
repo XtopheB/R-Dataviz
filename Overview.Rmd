@@ -74,10 +74,6 @@ MyDataNumCatAvg <- MyDataNumCat %>%
 
 kable_styling(t)
 ```
-
-
-
-
 # Visualizing one variable
 
 ```{r Point}
@@ -107,7 +103,7 @@ ggplot(data= SDGPov) +
 ```{r Jitter }
 ggplot(data= SDGPov) +
  aes(x = Poverty, y ="") +
-    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9,  height = 0.1 ) +
+    geom_jitter(color=SIAP.color, size=0.9, alpha=0.9,  height = 0.2 ) +
    ggtitle("Points (jitter)")+ 
   xlab(SDGPov.caption)+
  theme_tufte()
@@ -277,6 +273,17 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
 
 
 ## Univariate numerical data by categories (ordered or not)
+```{r Tablesummary, echo = TRUE}
+ MySum <- MyDataNumCat %>% 
+  group_by(Country) %>% 
+  summarize(Q1 = quantile(Poverty, 0.25),
+            Mean = mean(Poverty),
+            Median = median(Poverty),
+            Q3 = quantile(Poverty, 0.75))
+
+k <-kable(MySum, digits = 1)
+kable_styling(k)
+```
 
 
 ```{r Multibox}
