@@ -3,18 +3,23 @@ title: "An overview of the different type of graphics"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
-  html_notebook: default
-  pdf_document: default
 ---
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set( message = FALSE, warning = FALSE, results =FALSE, echo = TRUE) 
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
 
 # My colors:
 SIAP.color <- "#0385a8"
@@ -66,7 +71,7 @@ MyDataNumCatAvg <- MyDataNumCat %>%
 ```
 
 
-```{r Table}
+```{r TableFull}
  t <-  kbl(SDGPov[1:9,
                      c("Indicator","Age", "Poverty", "TimePeriod" )],
            caption = SDGPov.caption
@@ -75,6 +80,17 @@ MyDataNumCatAvg <- MyDataNumCat %>%
 kable_styling(t)
 ```
 # Visualizing one variable
+
+
+```{r TableUni}
+ t1 <-  kbl(SDGPov[1:9,
+                     c("Poverty")],
+           caption = "Data Sample"
+)  
+
+kable_styling(t1,full_width = F)
+```
+
 
 ```{r Point}
 ggplot(data= SDGPov) +
@@ -199,9 +215,9 @@ ggplot(data= SDGPov) +
 ## Categorical data
 
 
-```{r TableCat}
+```{r TableCat, echo = FALSE, results=TRUE}
 t2 <- kable(MyDataNumCatAvg)
-kable_styling(t2)
+kable_styling(t2, full_width = F)
 ```
 
 
@@ -273,7 +289,7 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
 
 
 ## Univariate numerical data by categories (ordered or not)
-```{r Tablesummary, echo = TRUE}
+```{r Tablesummary, echo = FALSE, results=TRUE}
  MySum <- MyDataNumCat %>% 
   group_by(Country) %>% 
   summarize(Q1 = quantile(Poverty, 0.25),
@@ -282,7 +298,7 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
             Q3 = quantile(Poverty, 0.75))
 
 k <-kable(MySum, digits = 1)
-kable_styling(k)
+kable_styling(k, full_width = F)
 ```
 
 
@@ -492,6 +508,24 @@ Poverty.label <- "Prop. of pop.  below poverty line (%)"
 
 ```
 
+```{r Tablesummary2Var, echo = FALSE, results=TRUE}
+ MySum2 <- SDGMatPov %>% 
+  summarise_at(c("Poverty", "Maternal"), funs(mean= mean(., na.rm=TRUE), med = median(., na.rm=TRUE)))
+
+```
+
+
+```{r, results= "asis"}
+library(summarytools)
+descr(SDGMatPov[,c("Poverty","Maternal")], stats = "fivenum", 
+      style = "rmarkdown", plain.ascii =FALSE,
+      transpose = TRUE, headings = FALSE)
+```
+
+
+
+
+
 
 ## Scatter plot 
 
@@ -503,6 +537,31 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
   ylab(Maternal.label)+
        theme_minimal()
 ```
+
+```{r Scatterrug}
+ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  geom_rug(color = SIAP.color)+
+  ggtitle("Scatter plot with rug") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+
+```{r Scatterhisto}
+library(ggExtra)
+p <- ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with histograms") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "histogram", fill=SIAP.color)
+
+```
+
 
 ## Bubble chart
 
@@ -559,7 +618,7 @@ SDGMatPov.Time <- SDGMatPov %>%
 
 ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
 #ggplot(toto, aes(x=TimePeriod, y= Poverty)) +
-  geom_line(color = SIAP.color, alpha = 0.5) +
+  geom_line(color = SIAP.color, alpha = 0.5, size = 1.5) +
   ggtitle("Line plot ") +
   xlab("Time")+
   ylab(Poverty.label)+
@@ -569,8 +628,8 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
 
 ```{r Connectedline}
 ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
-  geom_line(color = SIAP.color, alpha = 0.5) +
-  geom_point(color = SIAP.color, alpha = 0.5)+
+  geom_line(color = SIAP.color, alpha = 0.5, size =1.2) +
+  geom_point(color = SIAP.color, alpha = 0.5, size = 2)+
   ggtitle("Connected Line plot ") +
   xlab("Time")+
   ylab(Poverty.label)+
@@ -580,9 +639,10 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, y= PovYear)) +
 ```{r Area}
 # geom_area start at 0, so we use  geom_ribbon (with ymax in the aes)
 ggplot(SDGMatPov.Time, aes(x=TimePeriod, ymax= PovYear)) +
-  geom_line(aes(x=TimePeriod, y= PovYear), color = SIAP.color) +
+  geom_line(aes(x=TimePeriod, y= PovYear), color = SIAP.color, size =1.2) +
   geom_ribbon(aes(ymin = 5.2), fill = SIAP.color, alpha = 0.3) +  
-  geom_point(aes(x=TimePeriod, y= PovYear),color = SIAP.color, alpha = 0.5)+
+  geom_point(aes(x=TimePeriod, y= PovYear),color = SIAP.color, 
+             alpha = 0.5, size = 2)+
   ggtitle("Area plot ") +
   xlab("Time")+
 #  ylim(5.5, NA)+
