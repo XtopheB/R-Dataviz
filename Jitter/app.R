@@ -28,7 +28,7 @@ SDGdata1<- readxl::read_xlsx("../Data/SDGDataSample.xlsx", col_names = TRUE, she
 SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
 SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
 SDGPov.caption <- paste("Proportion of population below international
-                           poverty line (%)- Obs. 1-9/", nrow(SDGPov))
+                           poverty line (%)")
 
 # --- Here we create a dataset
 set.seed(2512)
