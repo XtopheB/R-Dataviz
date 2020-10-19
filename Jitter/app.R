@@ -9,6 +9,44 @@
 
 library(shiny)
 
+# Global 
+## Libraries 
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+
+## Options and datasets 
+# My colors:
+SIAP.color <- "#0385a8"
+# Data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO
+# Only countries with letters A-C selected to avoid uneccessary heavy files
+
+SDGdata1<- readxl::read_xlsx("../Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
+
+SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
+SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
+SDGPov.caption <- paste("Proportion of population below international
+                           poverty line (%)- Obs. 1-9/", nrow(SDGPov))
+
+# --- Here we create a dataset
+set.seed(2512)
+MyDataNumCat <- data.frame(
+    Country=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
+    Poverty=c( rnorm(500, 20, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+)
+
+#  Avg by category 
+MyDataNumCatAvg <- MyDataNumCat %>%
+    group_by(Country) %>%
+    summarize(
+        Poverty.Avg = mean(Poverty)
+    )
+
+
+
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
