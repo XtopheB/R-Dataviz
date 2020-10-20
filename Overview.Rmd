@@ -334,6 +334,7 @@ MyDataNumCat %>%
   ) +
   coord_flip() +
   theme_minimal()+
+  theme(legend.position = "none")+
   ggtitle("Boxplot by category (countries)") +
   xlab("")
 
@@ -352,6 +353,7 @@ MyDataNumCat %>%
   ) +
   coord_flip() +
   theme_minimal()+
+  theme(legend.position = "none")+
   ggtitle("Boxplot by category (countries) with jitter") +
   xlab("")
 
@@ -682,21 +684,40 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, ymax= PovYear)) +
        theme_minimal()
 ```
 
-## Stacked area chart
-
-> These charts are for specific data types 
-
-```{r StackedArea}
+```{r Spaghetti}
 # create data
 set.seed(2512)
 time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=7) ) # x Axis
 value <- runif(49, 10, 100)               # y Axis
 country <- paste("Country", rep(LETTERS[1:7],times=7))# group, one shape per group
-MyDataArea <- data.frame(time, value, country)
+MyDataTime <- data.frame(time, value, country)
 
 
 # stacked area chart
-ggplot(MyDataArea, aes(x=time, y=value, fill=country)) + 
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    ggtitle("Spaghettiplot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 100)) +
+    ylab("Population below poverty line")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"))
+```
+
+
+
+
+## Stacked area chart
+
+> These charts are for specific data types 
+
+```{r StackedArea}
+
+
+# stacked area chart
+ggplot(MyDataTime, aes(x=time, y=value, fill=country)) + 
     geom_area(alpha=0.6 , size=.5, colour="white") +
     ggtitle("Stacked Area plot ") +
     labs(caption = "Generated Data") +
