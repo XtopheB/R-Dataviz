@@ -24,7 +24,7 @@ knitr::opts_chunk$set( message = FALSE, warning = FALSE,
 # My colors:
 SIAP.color <- "#0385a8"
 
-# Fucntion used to recreate ggplot standard colors
+# Function used to recreate ggplot standard colors
 ggplotColours <- function(n = 6, h = c(0, 360) + 15){
   if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
   hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
@@ -51,27 +51,43 @@ library(kableExtra)
 # ---  SDGs Data --- 
 
 # Data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO
-# Only countries with letters A-C selected to avoid uneccessary heavy files
+# Only countries with letters A-C selected to avoid uneccessary heavy file
 
-SDGdata1<- readxl::read_xlsx("Data/SDGDataSample.xlsx", col_names = TRUE, sheet = "Goal1")
+# Poverty index  (Goal 1.1.1)  Proportion of population below poverty line
+SDGdata1<- readxl::read_xlsx("Data/SDGDataSample.xlsx", 
+                             col_names = TRUE, sheet = "Goal1")
 
 SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
-SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
-SDGPov.caption <- paste("Proportion of population below international
-                           poverty line (%)- Obs. 1-9/", nrow(SDGPov))
 
-# --- Here we create a dataset
+# Select only a portion of the data
+SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
+SDGPov.caption <- "Proportion of population below international                            poverty line (%)"
+
+
+# Child Mortality (Goal 3.2.1)
+SDGdata3.2<- readxl::read_xlsx("Data/SDGDataSample.xlsx", 
+                             col_names = TRUE, sheet = "Goal3-2-1")
+
+SDGdata3.2$ChildDeath <- as.numeric(SDGdata3.2$Value)
+
+# Select only a portion of the data
+SDGChildDeath <- subset(SDGdata3.2, ChildDeath >1 & Sex =="BOTHSEX" )
+SDGChildDeath.caption <- SDGdata3.2$SeriesDescription[1]
+
+
+# --- Here we generate a dataset with categorical values 
+#  Data set with age recorded by country
 set.seed(2512)
 MyDataNumCat <- data.frame(
   Country=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
-  Poverty=c( rnorm(500, 20, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
+  Age=c( rnorm(500, 20, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
 )
 
-#  Avg by category 
+#  Avg by Country (category)
 MyDataNumCatAvg <- MyDataNumCat %>%
   group_by(Country) %>%
   summarize(
-    Poverty.Avg = mean(Poverty)
+    Age.Avg = mean(Age)
   )
 
 ```
@@ -222,7 +238,7 @@ kable_styling(t2, full_width = F)
 
 ```{r Barplot}
 # Barplot
-ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Age.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
   ggtitle("Barplot")+ 
   xlab("Index by country") + 
@@ -233,7 +249,7 @@ ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
 
 ```{r Barplotflip}
 # Barplot
-ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) + 
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Age.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
   coord_flip()+
   ggtitle("Horizontal Barplot")+ 
@@ -249,9 +265,9 @@ see [Yan holtz page on reodering with R](https://www.r-graph-gallery.com/267-reo
 ```{r Barplotfliporder}
 # Reordering the bars 
 MyDataNumCatAvg2 <- MyDataNumCatAvg
-MyDataNumCatAvg2$Country <- with(MyDataNumCatAvg2, reorder(Country, Poverty.Avg, max ))
+MyDataNumCatAvg2$Country <- with(MyDataNumCatAvg2, reorder(Country, Age.Avg, max ))
 
-ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) + 
+ggplot(MyDataNumCatAvg2, aes(x=Country, y=Age.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
   coord_flip()+
   ggtitle("Horizontal Barplot (ordered)")+ 
@@ -259,7 +275,7 @@ ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) +
   theme_minimal()
 ```
 ```{r CircularBar, include=FALSE, results=FALSE}
-ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) + 
+ggplot(MyDataNumCatAvg2, aes(x=Country, y=Age.Avg)) + 
   geom_bar(stat = "identity", fill = SIAP.color, alpha = 0.8)+
   # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
  coord_polar(start = 0) +
@@ -277,18 +293,18 @@ ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) +
 
 
 ```{r Lollipop}
-ggplot(MyDataNumCatAvg, aes(x=Country, y=Poverty.Avg)) +
+ggplot(MyDataNumCatAvg, aes(x=Country, y=Age.Avg)) +
   geom_point(color=SIAP.color, size= 3,  alpha=0.9) + 
-  geom_segment( aes(x=Country, xend=Country, y=0, yend=Poverty.Avg), color=SIAP.color) +
+  geom_segment( aes(x=Country, xend=Country, y=0, yend=Age.Avg), color=SIAP.color) +
   ggtitle("Lollipop plot")+ 
   theme_minimal()
 ```
 
 
 ```{r Lollipopflip}
-ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) +
+ggplot(MyDataNumCatAvg2, aes(x=Country, y=Age.Avg)) +
   geom_point(color=SIAP.color, size= 3,  alpha=0.9) + 
-  geom_segment( aes(x=Country, xend=Country, y=0, yend=Poverty.Avg), color=SIAP.color) +
+  geom_segment( aes(x=Country, xend=Country, y=0, yend=Age.Avg), color=SIAP.color) +
   coord_flip() +
   ggtitle("Horizontal lollipop plot")+ 
   theme_minimal()
@@ -297,10 +313,10 @@ ggplot(MyDataNumCatAvg2, aes(x=Country, y=Poverty.Avg)) +
 ```{r Tablesummary, echo = FALSE, results=TRUE}
  MySum <- MyDataNumCat %>% 
   group_by(Country) %>% 
-  summarize(Q1 = quantile(Poverty, 0.25),
-            Mean = mean(Poverty),
-            Median = median(Poverty),
-            Q3 = quantile(Poverty, 0.75))
+  summarize(Q1 = quantile(Age, 0.25),
+            Mean = mean(Age),
+            Median = median(Age),
+            Q3 = quantile(Age, 0.75))
 
 k <-kable(MySum, digits = 1)
 kable_styling(k, full_width = F)
@@ -310,7 +326,7 @@ kable_styling(k, full_width = F)
 ```{r Multibox}
 # Plot
 MyDataNumCat %>%
-  ggplot( aes(x=Country, y=Poverty, fill=Country)) +
+  ggplot( aes(x=Country, y=Age, fill=Country)) +
   geom_boxplot() +
   theme(
     legend.position="none",
@@ -327,7 +343,7 @@ MyDataNumCat %>%
 ```{r MultiboxJitter}
 # Plot
 MyDataNumCat %>%
-  ggplot( aes(x=Country, y=Poverty, fill=Country)) +
+  ggplot( aes(x=Country, y=Age, fill=Country)) +
   geom_boxplot() +
   geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
   theme(
@@ -346,12 +362,12 @@ Here we are interested by the shape of the distribution, and by comparing the di
 ```{r Ridgehisto}
 library(ggridges)
 # Plot
-  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  ggplot(MyDataNumCat,  aes(x = Age, y = Country, fill = Country)) +
   geom_density_ridges(stat="binline", bins=20) +
   theme_ridges() +
   theme(legend.position = "none")+
   ggtitle("Histogram by category (countries)") +
-  xlab("Poverty")
+  xlab("Age")
 
 ```
 
@@ -360,25 +376,25 @@ library(ggridges)
 ```{r Ridgehistojitter}
 library(ggridges)
 # Plot
-  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  ggplot(MyDataNumCat,  aes(x = Age, y = Country, fill = Country)) +
   geom_density_ridges(stat="binline", bins=20) +
   geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
   theme_ridges() +
   theme(legend.position = "none")+
   ggtitle("Histogram by category (countries) with jitter ") +
-  xlab("Poverty")
+  xlab("Age")
 
 ```
 
 ```{r Ridge}
 library(ggridges)
 # Plot
-  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  ggplot(MyDataNumCat,  aes(x = Age, y = Country, fill = Country)) +
   geom_density_ridges() +
   theme_ridges() +
   theme(legend.position = "none")+
   ggtitle("Density by category (countries) ") +
-  xlab("Poverty")
+  xlab("Age")
 
 ```
 
@@ -386,13 +402,13 @@ library(ggridges)
 ```{r Ridgejitter}
 library(ggridges)
 # Plot
-  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  ggplot(MyDataNumCat,  aes(x = Age, y = Country, fill = Country)) +
   geom_density_ridges() +
   geom_jitter(color= SIAP.color, size=0.6, alpha=0.9) +
   theme_ridges() +
   theme(legend.position = "none")+
   ggtitle("Density by category (countries) with jitter ") +
-  xlab("Poverty")
+  xlab("Age")
 
 ```
 
@@ -401,12 +417,12 @@ library(ggridges)
 ```{r Violin}
 
 # Plot
-  ggplot(MyDataNumCat,  aes(x = Poverty, y = Country, fill = Country)) +
+  ggplot(MyDataNumCat,  aes(x = Age, y = Country, fill = Country)) +
   geom_violin() +
   theme_minimal() +
   theme(legend.position = "none")+
   ggtitle("Violin plot by category (countries)") +
-  xlab("Poverty")
+  xlab("Age")
 
 ```
 
@@ -437,18 +453,24 @@ ggplot(lincoln_weather, aes(x = `Mean Temperature [F]`, y = `Month`, fill = ..x.
 # Proportions
 
 ```{r Piechart}
-# Basic piechart
-ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
+# We generate a dataset suitable for proportions
+MyDataProp <- data.frame(
+  Country = c("A", "B", "C", "D"),
+  Population = c(100, 50, 120, 180)
+) 
+
+# Basic pie chart
+ggplot(MyDataProp, aes(x="", y=Population, fill=Country)) +
   geom_bar(stat="identity", width=1) +
   coord_polar("y", start=0)+
-  ggtitle("Piechart") +
+  ggtitle("Pie chart") +
   theme_void() 
 
 ```
 
 ```{r Stackedbar}
-# Basic piechart
-ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
+# Basic Stacked bar chart
+ggplot(MyDataProp, aes(x="", y=Population, fill=Country)) +
   geom_bar(stat="identity", width=0.2) +
   coord_flip()+
   ggtitle("Horizontal stackbar") +
@@ -458,8 +480,13 @@ ggplot(MyDataNumCatAvg, aes(x="", y=Poverty.Avg, fill=Country)) +
 
 
 ```{r Stackedbarordered, eval=FALSE, include=FALSE}
-# Basic piechart
-ggplot(MyDataNumCatAvg2, aes(x="", y=Poverty.Avg, fill=Country)) +
+# We need to reorder the file
+
+MyDataProp2 <- MyDataProp
+MyDataProp2$Country <- with(MyDataProp2, reorder(Country, Population, max ))
+
+# Bar chart
+ggplot(MyDataProp2, aes(x="", y=Population, fill=Country)) +
   geom_bar(stat="identity", width=0.2) +
   coord_flip()+
   ggtitle("Horizontal stackbar (ordered)") +
@@ -470,18 +497,16 @@ ggplot(MyDataNumCatAvg2, aes(x="", y=Poverty.Avg, fill=Country)) +
 ```{r Treemap}
 library(treemap)
  
-
-
 # Create data
 group <- c("group-1","group-2","group-3")
 value <- c(13,5,22)
 data <- data.frame(group,value)
  
 # treemap
-treemap(MyDataNumCatAvg,
-            index="Country",vSize="Poverty.Avg",
+treemap(MyDataProp,
+            index="Country",vSize="Population",
             type="index", 
-            palette = ggplotColours(n = 4),  
+            palette = ggplotColours(n = 4), 
             title="A Treemap"                      
             )
 ```
