@@ -1,0 +1,210 @@
+---
+title: "Improving Data Ink ratio"
+subtitle: " Box-and-whiskers"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(kableExtra)
+
+
+
+library(foreign)
+library(np)
+library(Hmisc)  #  <- Misc. statistiques descriptives  
+library(reporttools)  # pour les tables
+library(xtable)
+
+#library(psych)  #  <- statistiques descriptives pour psychologues
+#library(pastecs) #  <- statistiques descrioptives pour Space-Time Ecological Series
+require(hdrcde)
+require(vioplot)
+
+```
+
+## Data set {-}
+We have observations for an indicator from 4 countries
+```{r BoxData}
+## from http://www.aliquote.org/articles/tech/r-graphics/index.pdf
+set.seed(123)
+ns <- c(15,28,10,20,35)
+n <- length(ns)
+region <- factor(rep(1:n,ns),labels=paste("Region ",1:n,sep=""))
+indic <- rnorm(length(region),mean=3+(as.numeric(region)-2)^2)
+```
+
+## Classical boxplot by region {-}  
+```{r BoxPlotOriginal}
+boxplot(indic~region,border=1:n,xlab="Regions",ylab="Indicator")
+```
+
+# Removing *non-data* elements
+
+```{r BoxPlotModified1}
+boxplot(indic~region,xlab="Regions",ylab="Indicator")
+```
+
+
+```{r BoxPlotModified2}
+boxplot(indic~region,xlab="Regions",ylab="Indicator", 
+        axes=F)
+axis(side = 1)
+axis(side = 2)
+```
+
+
+```{r BoxPlotModified3}
+boxplot(indic~region, xlab="Regions",ylab="Indicator", 
+        axes = FALSE, 
+        pars = list(boxcol = "white"))
+axis(side = 1)
+axis(side = 2)
+```
+
+
+```{r BoxPlotModified4}
+boxplot(indic~region, xlab="Regions",ylab="Indicator", 
+        axes = FALSE,
+        pars = list(boxcol = "white",
+                    whisklty = c(1, 1),
+                    staplelty = "blank", 
+                    outcex = 0.5) )
+axis(side = 1)
+axis(side=2)
+```
+
+
+```{r BoxPlotModified5}
+#Tufte Style 
+
+boxplot(indic~region, xlab="Regions",ylab="Indicator",
+         axes = FALSE,
+         pars = list(boxcol = "white",
+                    whisklty = c(1, 1),
+                    staplelty = "blank", 
+                    outcex = 0.5, 
+                    medlty = "blank", 
+                    medpch=16) )
+axis(side = 1)
+axis(side=2)
+```
+
+
+```{r BoxPlotModified6}
+boxplot(indic~region, xlab="Regions",ylab="Indicator",
+         axes = FALSE,
+         pars = list(boxcol = "white",
+                    whisklty = c(1, 1),
+                    staplelty = "blank", 
+                    outcex = 0.5, 
+                    medlty = "blank", 
+                    medpch=16) )
+
+# Get the region means or median
+means <- by(indic, region, median)  
+# Plot symbols for each mean, centered on x 
+points(1:5, means, pch = 23, cex = 0.75)
+# Now label the means, formatting the values
+# to one decimal place. Place the values to the
+# left of each region plot.
+
+text(1:5 - 0.1, means,  labels = formatC(means, format = "f", digits = 1),
+     pos = 2, cex = 1.0)
+axis(side = 1)
+axis(side=2)
+```
+
+
+
+```{r BoxPlotFinal}
+boxplot(indic~region, xlab="Regions",ylab="Indicator",
+         axes = FALSE,
+         pars = list(boxcol = "white",
+                    whisklty = c(1, 1),
+                    staplelty = "blank", 
+                    outcex = 0.5, 
+                    medlty = "blank", 
+                    medpch =20),
+                    col.lab="grey")
+
+# Get the region means or median
+means <- by(indic, region, median)  
+# Plot symbols for each mean, centered on x 
+points(1:5, means, pch = 23, cex = 0.75, bg = SIAP.color)
+# Now label the means, formatting the values
+# to one decimal place. Place the values to the
+# left of each region plot.
+
+text(1:5 - 0.1, means,  labels = formatC(means, format = "f", digits = 1),
+     pos = 2, cex = 1.0, col = SIAP.color)
+axis(side = 1, col = "grey", col.axis = "grey")
+axis(side=2, col ="grey", col.axis = "grey")
+#axiscolors = "grey"
+```
+
+
+# Comparing boxplot with other graphics
+
+```{r BoxRugDensityViolin}
+require(hdrcde)
+require(vioplot)
+require(Hmisc)
+
+set.seed(123)
+x <- rnorm(200,2,1)
+opar <- par(mfrow=c(1,5), mar=c(3,2,4,1))
+
+xxx <- seq(min(x), max(x), length=500)
+yyy <- dnorm(xxx,  mean=2)
+
+## Fake to highlight the Rug
+plot(yyy, xxx, type="l", col= "white", main="Rug", axes = FALSE)
+rug(x,side = 2, lwd = 1,ticksize = 1)
+boxplot(x, col="gray90", main="standard\nboxplot", axes = FALSE)
+plot(yyy, xxx, type="l",main="density", frame.plot = FALSE)
+vioplot(x, axes = FALSE)
+title("violin plot")
+
+#bpplot(x)
+par(opar)
+
+```
+
+
+
