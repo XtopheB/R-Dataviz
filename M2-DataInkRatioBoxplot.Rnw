@@ -1,0 +1,982 @@
+%%%%%
+% Document pour prisentation des outils de visualisation   %
+% Created (CB) 17/10/2012
+
+\documentclass[a4paper]{article}
+
+\title{An introduction to data vizualisation}
+\author{Christophe }
+
+\usepackage{Sweave, setspace,graphicx,srcltx,enumitem,harvard, subfig}
+\usepackage{setspace, relsize}   % <-- for package LaTex in Hmisc to work
+\usepackage{rotating}
+\usepackage[french]{babel} 
+\usepackage[latin1]{inputenc} 
+\usepackage{url}  % for urls...
+\hypersetup{
+colorlinks=true,
+urlcolor=blue}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+
+% Quelques Options de d??part pour mettre les graphiques dans un sous ripertoire
+% et leur donner le nom Graph-001
+
+\SweaveOpts{prefix.string=Graphics/GraphR, eps = FALSE, pdf = TRUE}  
+%\SweaveOpts{width=5, height=3.5}
+
+% Et pour laisser l affichage des commentaires du programmes
+\SweaveOpts{keep.source=TRUE}
+
+<<echo=FALSE, results=hide>>=
+
+rm(list=ls())
+
+## Second change the working directory
+
+setwd("c:/Chris/Visualisation/Graphics")  
+      
+#setwd("C:/Chris/zprogs/Air/progs")   
+
+## libraries
+
+library(foreign)
+library(np)
+library(Hmisc)  #  <- Misc. statistiques descriptives  
+library(reporttools)  # pour les tables
+library(xtable)
+
+#library(psych)  #  <- statistiques descriptives pour psychologues
+#library(pastecs) #  <- statistiques descrioptives pour Space-Time Ecological Series
+require(hdrcde)
+require(vioplot)
+
+
+@
+
+% ------------Debut du papier -------------
+\maketitle
+%\tableofcontents
+%\newpage
+
+\section{Theory of data graphics - Edward R. Tufte}
+
+
+\subsection{Graphical excellence}
+Graphical excellence is nearly alway multivariate and requires telling the truth about the data.\\
+Graphical display should :
+\begin{enumerate}
+  \item \textit{Show the data}
+  \item \textit{Induce the viewer to think}
+  \item \textit{Avoid distorting what the data have to say}
+  \item \textit{Present many numbers in a small place}
+  \item \textit{Make large data sets coherent}
+  \item \textit{Encourage the eye to compare different pieces of data}
+  \item \textit{Reveal data at several levels of details, from broad overview to fine structure}
+  \item \textit{Serve a reasonnable clear purpose}
+  \item \textit{Be closely integrated with the statistical description of the dataset}
+  
+\end{enumerate}  
+
+%\subsection{"Less ink"}
+
+
+\subsection{Raconter une histoire en images}
+
+\begin{figure}
+\includegraphics[width = 1.1\textwidth]{Graphics/Minard.png}
+\caption{Carte figurative des pertes successives en hommes de l'armée Françaisee dans la campagne de Russie en 1812-1813, Charles Minard (1869)}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width = 1.1\textwidth]{Graphics/marey_train-schedule.jpg}
+\caption{Horaires des trains entre Paris et Lyon, E.J. Marey (1885)\\ This method is attributed to the French engineer Ibry, but new evidence suggests that Lt. Sergeev had developed this method approximately 30 years earlier in Russia. Source E. R. Tufte}
+\end{figure}
+
+
+\begin{figure}
+\includegraphics[width = 0.9\textwidth]{Graphics/HistoricalEnergy.jpg}
+\caption{Evolution de la consommation de ressources energétiques ; Source \url{<http://www.digital-leads.com/2012/11/informationen-gestalten/>}}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width = 0.9\textwidth]{Graphics/AirTransportation.jpg}
+\caption{Lignes aériennes aux USA. Source Aaron Koblin \url{<http://www.aaronkoblin.com/work/flightpatterns/index.html>}}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width = 0.9\textwidth]{Graphics/NivoseHospitalet.jpg}
+\caption{Niveaux de neige et précipitations. Source MétéoFrance \url{<http://www.infoneige.com/nivose-cerdagne-canigou>}}
+\end{figure}
+
+
+
+
+%\begin{figure}
+%\includegraphics[width = 0.9\textwidth]{Graphics/PeintureVizualisation.jpg}
+%\caption{Horloge murale]
+%\end{figure}
+%L???agence n??erlandaise Staynice, fond??e en 2007 par les fr??res van Dijck, a r??alis?? une d??coration murale dans la caserne de Ulvenhout. Peinte ?? la main, elle permet de visualiser les interventions op??r??es ces 10 derni??res ann??es en les repr??sentant par des cercles et en les disposant g??ographiquement ?? l???endroit exact o?? elles ont eu lieu.
+
+\clearpage
+
+\subsection{Rules}
+\begin{enumerate}
+  \item \textit{Above all else \textbf{show the data}}
+  \item \textit{Maximize the data-ink ratio}
+  \item \textit{Erase non-data-ink}
+  \item \textit{Erase redudant data-ink}
+  \item \textit{Revise and edit}
+\end{enumerate}
+
+\begin{figure}
+\includegraphics[width = 1.2\textwidth, angle =-3]{Graphics/StatBrewiary.pdf}
+\caption{Statistical Breviary by William Playfair (1801) Source : E. R. Tufte}
+\end{figure}
+
+%\newpage
+
+\section{Graphical Integrity}
+
+Graphical excellence begins with telling the truth about the data, so a \textbf{lie factor} can be constructed to compute the misrepresentation.
+\begin{equation}
+Lie Factor = \frac{size\;  of\; effect\; shown\; in\; graphic}{size \; of\; effect \; in \; data}
+\end{equation}
+
+\subsection{Exemples}
+\begin{center}
+\begin{figure}[h]
+\includegraphics[width = 0.5\textwidth, angle = -1]{Graphics/GovernmentSpending1.pdf}
+\caption{Governemnt spending "Skyrocketing". Source : E. R. Tufte from Playfair(1786)}
+\end{figure}
+
+
+\begin{figure}[h]
+\includegraphics[width =0.9\textwidth, angle = -1]{Graphics/GovernmentSpending2.pdf}
+\caption{Governemnt spending "Skyrocketing". Source : E. R. Tufte from Playfair(1786). \\ In a note Playfair says that the spending are now in real and not nominal millions! }
+\end{figure}
+\end{center}
+\clearpage
+
+Another example of a big lie. Thee real magnitude of change in cars consumptions is of 18 mpg in  1978 to 27.5 mpg in 1985,  so \textbf{the change} is of 53\% in 7 years.  On the graph, the horizontal line is 1.5 cm in 1978  and 13 cm in 1985,  so the \textbf{visual change} is around 75\% making the \textbf{lie factor} reaching 14.5\% !!!
+
+\begin{figure}[h]
+\includegraphics[width = 0.8\textwidth]{Graphics/FuelEconomy1.pdf}
+\caption{Fuel economy standards. Source : E. R. Tufte (from NY Times 1978)}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 0.6\textwidth, angle=-1]{Graphics/FuelEconomy2.pdf}
+\caption{Fuel economy standards, another view. Source : E. R. Tufte from NY Times 1978}
+\end{figure}
+
+
+\newpage
+
+\subsection{Exemples with MS-Excell}
+
+\begin{figure}[h]
+\includegraphics[width = 1.0\textwidth]{Graphics/Excell1.jpg}
+\caption{Dette des administrations publiques. Etat vs Ensemble.\\ Source : INSEE\\
+Les dépenses de l'état (vert) semblent croitre plus fortement }
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 1.0\textwidth]{Graphics/Excell2.jpg}
+\caption{Dette des administrations publiques. Etat vs Ensemble.\\ Source : INSEE}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Excell3.jpg}
+\caption{Dette des administrations publiques. Etat vs Ensemble.\\ Source : INSEE}
+\end{figure}
+
+\clearpage
+
+
+\subsection{Data-ink ratio}
+
+Ink shoul present data-information. \textit{Data-ink} is the \textbf{non-erasable} core of graphic. The E. Tufte defines the  \textit{data-ink-ratio} as:
+
+\begin{equation}
+Data-ink-ratio = \frac{data-ink}{total  \; ink \; used \; to \; print \; the \; graphic}
+\end{equation}
+
+in the following, we will analyse how much of the information could be erased...
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Excell4.jpg}
+\caption{Dette des administrations publiques. Etat vs Ensemble Source : INSEE}
+\end{figure}
+%\section{Visualiser des densités}
+
+\clearpage 
+
+\section{Boxplots and Co}
+
+Le Box-plot est surement le plus simple et le plus utilisé pour comparer des distributions entre groupes d'individus par exemple. Il n'est pas interdit d'utiliser des couleurs et les axes horizontaux et verticaux...
+
+<<fig=TRUE, echo=FALSE>>=
+## from http://www.aliquote.org/articles/tech/r-graphics/index.pdf
+
+ns <- c(15,28,10,20,35)
+n <- length(ns)
+group <- factor(rep(1:n,ns),labels=paste("g",1:n,sep=""))
+data <- rnorm(length(group),mean=100+(as.numeric(group)-2)^2)
+boxplot(data~group,border=1:n,xlab="Groupe",ylab="Response",varwidth=T)
+for (i in 1:n) {
+  rug(data[as.numeric(group)==i],side=2,col=i)
+}
+@
+
+\subsection{Let's erase stuff...}
+
+
+<<fig=TRUE, echo=FALSE>>=
+#opar <- par(mfrow=c(2,2), mar=c(3,2,4,1))
+boxplot(data~group,xlab="Groupe",ylab="Response",varwidth=T)
+boxplot(data~group,xlab="Groupe",ylab="Response",varwidth=F, border = T,  axes=F, )
+axis(side = 1)
+axis(side=2)
+
+boxplot(data~group, xlab="Groupe",ylab="Response", 
+        pars = list(boxcol = "white",  medcex = 1.3,whisklty = c(1, 1),  
+        staplelty = "blank", outcex = 0.5), axes = FALSE)
+axis(side = 1)
+axis(side=2)
+#Tufte Style 
+# (http://stackoverflow.com/questions/6973394/functions-available-for-tufte-boxplots-in-r) 
+
+boxplot(data~group, xlab="Groupe",ylab="Response", 
+        pars = list(boxcol = "white", medlty = "blank", medpch=16, medcex = 1.3, 
+        whisklty = c(1, 1), staplelty = "blank", outcex = 0.5), axes = FALSE)
+axis(side = 1)
+axis(side=2)
+
+
+
+boxplot(data~group, xlab="Groupe",ylab="Response", 
+        pars = list(boxcol = "white", medlty = "blank", medpch=16, medcex = 1.3, 
+        whisklty = c(1, 1), staplelty = "blank", outcex = 0.5), axes = FALSE)
+# Get the group means or median
+means <- by(data, group, median)  
+# Plot symbols for each mean, centered on x 
+points(1:5, means, pch = 23, cex = 0.75, bg = "red")
+# Now label the means, formatting the values
+# to one decimal place. Place the values to the
+# left of each group plot.
+
+text(1:5 - 0.1, means,  labels = formatC(means, format = "f", digits = 1),
+     pos = 2, cex = 1.0, col = "red")
+axis(side = 1)
+#axis(side=2)
+
+par(opar)
+@
+
+
+\subsection{Let's change the shape...}
+\textbf{Box-percentile} plots are similiar to boxplots, except box-percentile plots supply more information about the univariate distributions. At any height the width of the irregular "box" is proportional to the percentile of that height, up to the 50th percentile, and above the 50th percentile the width is proportional to 100 minus the percentile. Thus, the width at any given height is proportional to the percent of observations that are more extreme in that direction. As in boxplots, the median, 25th and 75th percentiles are marked with line segments across the box. see \url{http://had.co.nz/stat645/project-03/boxplots.pdf}.
+
+
+<<fig=TRUE, echo=false>>=
+# from http://gallery.r-enthusiasts.com/graph/Box-Percentile_plot,77
+require(Hmisc)
+set.seed(1)
+x1 <- rnorm(500)
+x2 <- runif(500, -2, 2)
+x3 <- abs(rnorm(500))-2
+opar <- par(mfrow=c(1,2), mar=c(3,2,4,1))
+boxplot(x1,x2,x3, main = "Boxplot", names=c('Normal','Uniform', 'Half-Normal'))
+bpplot(x1, x2, x3, name=c('Normal','Uniform', 'Half-Normal'))
+par(opar)
+@
+
+On peut voir la différence sur 2 groupes tirés aléatoirement de la même distribution:
+
+<<fig=TRUE, echo=false>>=
+# Spliting in two groups the normal distribution
+opar <- par(mfrow=c(1,2), mar=c(3,2,4,1))
+g <- sample(1:2, 500, replace=TRUE)
+boxplot(split(x1, g), names=c('Group 1','Group 2'), main = "Boxplot")
+bpplot(split(x1, g), name=c('Group 1','Group 2'))
+par(opar)
+@
+
+The boxplot has friends... The first figure show the underlying density of the random generated data: a normal mixture of two components. Then, from left to right are plotted variations around the idea of a boxplot. 
+
+\begin{enumerate}
+  \item Underlying bimodal density 
+  \item The \textbf{boxplot} itself, which concentrates on the central bulk of the data
+  \item The \textbf{HDR boxplot}, which looks at the zone of highest density
+  \item The \textbf{Violin plot}, that uses kernel estimator of the density
+  \item The \textbf{Box-Percentile plot}, same as boxplot, but showing more information about the density
+\end{enumerate}
+
+
+Sur une distribution "classique" et unimodale, on ne différencie pa les 4 box-plot:
+
+<<fig=TRUE, echo=false>>=
+
+# from http://gallery.r-enthusiasts.com/graph/The_boxplot_friends,102
+require(hdrcde)
+require(vioplot)
+require(Hmisc)
+set.seed(123)
+x <- rnorm(200,2,1)
+opar <- par(mfrow=c(1,5), mar=c(3,2,4,1))
+
+xxx <- seq(min(x), max(x), length=500)
+yyy <- dnorm(xxx,  mean=2)
+
+plot(yyy, xxx, type="l",main="Underlying\ndensity")
+
+boxplot(x, col="gray90", main="standard\nboxplot")
+hdr.boxplot(x, main="HDR\nboxplot")
+vioplot(x)
+title("violin plot")
+bpplot(x)
+par(opar)
+@
+
+Mais si l'on change la distribution, pour la rendre bi-modale. Only the violin plot and the HDR boxplot capture the bimodality in that dataset. Given that the dataset is truly bimodal, they are, in that case, better than the standard boxplot and the Box percentile plot.
+
+
+<<fig=TRUE, echo=false>>=
+# from http://gallery.r-enthusiasts.com/graph/The_boxplot_friends,102
+#library("beanplot") http://cran.r-project.org/web/packages/beanplot/vignettes/beanplot.pdf
+
+x <- c(rnorm(100,0,1), rnorm(100,3,1))  #<- Modif CB on tire plus dans celle centrée en 3
+
+opar <- par(mfrow=c(1,5), mar=c(3,2,4,1))
+
+xxx <- seq(min(x), max(x), length=500)
+yyy <- dnorm(xxx)/2 + dnorm(xxx, mean=3)/2   #<- Modif CB on tire plus dans celle centrée en 3
+
+plot(yyy, xxx, type="l",main="Underlying\ndensity")
+
+boxplot(x, col="gray90", main="standard\nboxplot")
+hdr.boxplot(x, main="HDR\nboxplot")
+vioplot(x)
+title("violin plot")
+bpplot(x)
+par(opar)
+@
+
+Source \url{http://gallery.r-enthusiasts.com/graph/The_boxplot_friends_102}.\\
+
+McGill, Tukey and Larsen (1978) introduced the \textbf{Variable Width boxplot},where  width is used to represent the density, and this is believed to prevent misinterpretation of certain characteristics of the data, in particular the median.
+
+In the same paper he introduced the Notched boxplot, which adds yet another element to the original boxplot by displaying confidence intervals around the medians. Doing so allows one to visually  determine whether or not the medians are significantly different between groups.
+
+
+<<fig=TRUE, echo=false>>=
+# Spliting in three groups of inequal zise the normal distribution
+opar <- par(mfrow=c(1,3), mar=c(3,2,4,1))
+x <- rnorm(200,2,1)
+x1 <- subset(x, x>0)
+x2 <- subset(x, x>2)
+x3 <- subset(x, x>3)
+boxplot(x1, x2, x3, names=c('Group 1','Group 2','Group 3'), main = "Boxplot")
+boxplot(x1, x2, x3, names=c('Group 1','Group 2','Group 3'), main = "with variable width", varwidth=TRUE)
+boxplot(x1, x2, x3, names=c('Group 1','Group 2','Group 3'), main = "with var. width and Notches", varwidth=TRUE, notch=TRUE)
+par(opar)
+@
+
+
+\clearpage
+
+\subsection{Context is important ! }
+
+\begin{figure}[h]
+\includegraphics[width = 0.8\textwidth]{Graphics/Passengers1.pdf}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 0.8\textwidth]{Graphics/Passengers2.pdf}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Passengers3.pdf}
+\end{figure}
+
+\clearpage
+
+
+\section{Visualiser des relations}
+
+\subsection{De l'intérêt de visualiser - F.J. Anscombe}
+
+Considerons les 3 jeux de données proposés par F. J Anscombe $(X_1, Y_1)$,$(X_2, Y_2)$ \& $(X_3, Y_3)$
+
+<<echo=false, results=tex>>=
+
+dataAnscombe <- read.csv("Anscombe.csv", sep=";") 
+Mycap <- paste("Summary of the 3 data sets : Xs ")
+
+Mystats <-  list("n", "min", "q1", "median", "mean", "q3", "max") 
+Mylab <- "Monlabel"
+
+Myvars <- with(dataAnscombe, data.frame("X1" = dataAnscombe$x1,
+                                      "X2" = dataAnscombe$x2,
+                                      "X3" = dataAnscombe$x3,
+                                      "X4" = dataAnscombe$x4
+                                       )
+)
+tableContinuous(vars = Myvars, stats = Mystats, prec=2, cap = Mycap, lab = Mylab, longtable = FALSE)
+@
+
+<<echo=false, results=tex>>=
+Mycap <- paste("Summary of the 3 data sets : Ys ")
+Myvars<- with(dataAnscombe, data.frame("Y1" = dataAnscombe$y1,
+                                      "Y2" = dataAnscombe$y2,
+                                      "Y3" = dataAnscombe$y3, 
+                                      "Y4" = dataAnscombe$y4
+                                       )
+)
+tableContinuous(vars = Myvars, stats = Mystats, prec=2, cap = Mycap, lab = Mylab, longtable = FALSE)
+
+@
+
+Notons que les correlations sont $cor(X_1, Y_1)$ = \Sexpr{round(cor(dataAnscombe$x1, dataAnscombe$y1),4)}, $cor(X_2, Y_2)$ = \Sexpr{round(cor(dataAnscombe$x2, dataAnscombe$y2), 4)},  $cor(X_3, Y_3)$ = \Sexpr{round(cor(dataAnscombe$x3, dataAnscombe$y3),4)} et enfin $cor(X_4, Y_4)$ = \Sexpr{round(cor(dataAnscombe$x4, dataAnscombe$y4), 4)} .\\
+
+Maintenant, regardons vraiment ces données:
+
+<<fig=TRUE, echo=false>>=
+opar <- par(mfrow=c(2,2), mar=c(3,2,4,1))
+
+plot(dataAnscombe$x1, dataAnscombe$y1, col="darkblue", xlim=c(3,20),ylim=c(0,14),
+     main=paste(" X1-Y1") )
+
+plot(dataAnscombe$x2, dataAnscombe$y2, col="darkblue",xlim=c(3,20),ylim=c(0,14),
+     main=paste(" X2-Y2") )
+
+plot(dataAnscombe$x3, dataAnscombe$y3,  col="darkblue",xlim=c(3,20),ylim=c(0,14),
+     main=paste(" X3-Y3") )
+
+plot(dataAnscombe$x4, dataAnscombe$y4,  col="darkblue",xlim=c(3,20),ylim=c(0,14),
+     main=paste(" X4-Y4") )
+
+par(opar)
+@
+
+
+
+\subsection{Scatterplot with Tufte axes}
+<<fig=TRUE, echo=false>>=
+fancyaxis <- function(side, summ, at=NULL, mingap=0.5, digits=2,
+                      shiftfac=0.003, gapfac=0.003) {
+  # side: like axis()
+  # summ: a summary object, for example returned by summary()
+  # mingap: the smallest gap permitted between two tickmarks,
+  #         expressed as a fraction of the default tickmark gap
+  # digits: the number of digits to round minimum and maximum to
+  # shiftfac: proportion of plot width used to offset the broken axis
+  # gapfac: proportion of plot width used to leave for median gap
+
+  # TODO:
+  # Deal with case where length(axTicks)<2
+  # Deal with logarithmic axis case properly, as axTicks difference
+  #  is not uniform.
+
+  # Get summary information
+  amin <- summ[1]
+  aq1 <- summ[2]
+  amed <- summ[3]
+  amean <- summ[4]
+  aq3 <- summ[5]
+  amax <- summ[6]
+
+  # Find out the properties of the side we are doing
+  parside <-
+    if (side==1){
+      # Does the outside of the plot have larger or smaller vales
+      flip <- 1
+      # Are we on the xaxis
+      xaxis <- TRUE
+      # Is this axis logarithmic
+      islog <- par("xlog")
+      # Is the other axis logarithmic
+      otherlog <- par("ylog")
+      # Relevant index of par("usr")
+      3
+    }
+    else if (side==2) {
+      flip <- 1
+      xaxis <- FALSE
+      islog <- par("ylog")
+      otherlog <- par("xlog")
+      1
+    }
+    else if (side==3) {
+      flip <- -1
+      xaxis <- TRUE
+      islog <- par("xlog")
+      otherlog <- par("ylog")
+      4
+    }
+    else if (side==4) {
+      flip <- -1
+      xaxis <- FALSE
+      islog <- par("ylog")
+      otherlog <- par("xlog")
+      2
+    }
+
+  # Calculate default positions of ticks
+  if (is.null(at))
+    ticks <- axTicks(side)
+  else
+    ticks <- at
+
+  # Remove any ticks outside the range
+  ticks <- ticks[(ticks>=amin) & (ticks<=amax)]
+
+  # Calculate the minimum desired gap between ticks
+  numticks <- length(ticks)
+  if (islog)
+    axgap <- (log10(ticks[numticks])-log10(ticks[numticks-1]))*mingap
+  else
+    axgap <- (ticks[numticks]-ticks[numticks-1])*mingap
+
+  # Get new range of tickmarks
+  numticks <- length(ticks)
+  firsttick <- ticks[1]
+  lasttick <- ticks[numticks]
+
+  # If max tick will be too close to the last tick, replace it,
+  #  otherwise append it
+  if (islog && (log10(amax) - log10(lasttick) < axgap)) {
+    ticks[numticks]<-amax
+  } else if (amax - lasttick < axgap) {
+    ticks[numticks]<-amax
+  } else {
+    ticks<-c(ticks,amax)
+  }
+
+  # Similarly for first tick
+  if (islog && (abs(log10(amin)-log10(firsttick)) < axgap)) {
+    ticks[1]<-amin
+  } else if (firsttick - amin < axgap) {
+    ticks[1]<-amin
+  } else {
+    ticks<-c(amin, ticks)
+  }
+
+  # Format the labels. min and max should have as many
+  #  trailing zeros they were rounded to, the others
+  #  should have the minimum needed to represent the tick marks
+  numticks <- length(ticks)
+
+  # Min and max
+  lmin <- format(round(ticks[1],digits), nsmall=digits, trim=TRUE)
+  lmax <- format(round(ticks[numticks]), nsmall=digits, trim=TRUE)
+
+  # The others
+  middle <- format(ticks[2:(numticks-1)], trim=TRUE)
+
+  # Combine them
+  labels <- c(lmin,middle,lmax)
+
+  # Draw the axis
+  oldlend <- par(lend = "butt")
+  on.exit(par(oldlend))
+
+  # Used for overwriting the axis line to leave tickmarks
+  bg <- par("bg")
+  if (bg == "transparent")
+    bg <- "white"
+
+  lwd=0.7
+  # Draw the axis and tickmarks
+  axis(side, ticks, labels=FALSE, col="gray50", lwd=lwd)
+  # Erase the axis
+  overlwd=1
+  axis(side, ticks, labels=FALSE, col=bg, tcl = 0, lwd=overlwd)
+  # Draw the labels
+  axis(side, ticks, labels=labels, tick=FALSE)
+
+  # Axis position
+  base<-par("usr")[parside]
+
+  # Width and height in user units
+  plotwidth <- diff(par("usr")[1:2])
+  plotheight <- diff(par("usr")[3:4])
+
+  # Shift for the q2 and q3 axis from the base (in inches)
+  shift <- par("pin")[1]*shiftfac*flip
+  # Gap for the median
+  gap <- par("pin")[1]*gapfac
+
+  # Shift for the mean pointer away from the axis
+  meanshift <- par("cin")[1]*0.5*flip
+
+  # Scale lengths so both axes are equal on output device
+  if (!xaxis) {
+    # Y axis
+
+    # Convert inches into user units
+    shift <- shift/par("pin")[1]*plotwidth
+    meanshift <- meanshift/par("pin")[1]*plotwidth
+    gap <- gap/par("pin")[2]*plotheight
+  } else {
+    # X axis
+
+    # Convert inches into user units
+    shift <- shift/par("pin")[2]*plotheight
+    meanshift <- meanshift/par("pin")[2]*plotheight
+    gap <- gap/par("pin")[1]*plotwidth
+  }
+
+  if (islog) {
+    # Log case on this axis (affects gap)
+    lmed <- log10(amed)
+    gapt <- 10^(lmed + gap)
+    gapb <- 10^(lmed - gap)
+  } else {
+    # Linear case on this axis
+    gapt <- amed + gap
+    gapb <- amed - gap
+  }
+
+  # Position of q2 and q3 axis segments
+  offset <- base + shift
+
+  # Which segment is the mean in?
+  if((amean>aq3) || (amean<aq1)) {
+    # Mean is in q1/q4, so move relative to base
+    meanbase <- base - meanshift
+  } else {
+    # Mean is in q2/q3, so move relative to shifted base
+    meanbase <- offset - meanshift
+  }
+
+  if (otherlog) {
+    # Log case on the other axis (affects shift, base, meanshift)
+    meanbase <- 10^meanbase
+    offset <- 10^offset
+    base <- 10^base
+  }
+
+  # Stops the lines overrunning
+  par(lend = "butt")
+
+  # Line width for axis lines
+  lwd=1
+
+  # Draw q1 and q4 axis segments
+  if (!xaxis) {
+    #     xs,         ys,          Don't clip, Line width, Don't overlap 
+    lines(rep(base,2),c(amin,aq1), xpd=TRUE, lwd=lwd)
+    lines(rep(base,2),c(aq3,amax), xpd=TRUE, lwd=lwd)
+  } else {
+    lines(c(amin,aq1),rep(base,2), xpd=TRUE, lwd=lwd)
+    lines(c(aq3,amax),rep(base,2), xpd=TRUE, lwd=lwd)
+  }
+
+  # Draw q2 and q3 axis segments
+  if (!xaxis) {
+    lines(rep(offset,2),c(aq1,gapb), xpd=TRUE, lwd=lwd)
+    lines(rep(offset,2),c(gapt,aq3), xpd=TRUE, lwd=lwd)
+  } else {
+    lines(c(aq1,gapb),rep(offset,2), xpd=TRUE, lwd=lwd)
+    lines(c(gapt,aq3),rep(offset,2), xpd=TRUE, lwd=lwd)
+  }
+
+
+  # Draw the mean
+  if (!xaxis) {
+    points(meanbase, amean, pch=18, cex=0.7, col="red", xpd=TRUE)
+  } else {
+    points(amean, meanbase, pch=18, cex=0.7, col="red", xpd=TRUE)
+  }
+}
+
+
+# Draw a stripchart on an axis, showing marginal frequency
+# TODO: Does not handle log axes well
+axisstripchart <- function(x, side, sshift=0.3) {
+  # x:    the data from which the plots are to be produced.
+  # side: as in axis()
+
+  # Find out the properties of the side we are doing
+  parside <-
+    if (side==1){
+      # Does the outside of the plot have larger or smaller vales
+      flip <- 1
+      # Are we on the yaxis
+      yaxis <- FALSE
+      # Relevant index of par("usr")
+      3
+    }
+    else if (side==2) {
+      flip <- 1
+      yaxis <- TRUE
+      1
+    }
+    else if (side==3) {
+      flip <- -1
+      yaxis <- FALSE
+      4
+    }
+    else if (side==4) {
+      flip <- -1
+      yaxis <- TRUE
+      2
+    }
+
+  # Axis position
+  base<-par("usr")[parside]
+
+  # Width and height in user units
+  plotwidth <- diff(par("usr")[1:2])
+  plotheight <- diff(par("usr")[3:4])
+
+  # Shift for the q2 and q3 axis from the base (in inches)
+  shift <- par("pin")[1]*0.003*flip
+  # Gap for the median
+  gap <- par("pin")[1]*0.003
+  # Shift for the mean pointer away from the axis
+  meanshift <- par("cin")[1]*0.5*flip
+  # Shift away from the q2 and q3 axis for the stripchart
+  stripshift <- par("cin")[1]*sshift*flip
+
+  # Scale lengths so both axes are equal on output device
+  if (yaxis) {
+    shift <- shift/par("pin")[1]*plotwidth
+    meanshift <- meanshift/par("pin")[1]*plotwidth
+    stripshift <- stripshift/par("pin")[1]*plotwidth
+    gap <- gap/par("pin")[2]*plotheight
+  } else {
+    shift <- shift/par("pin")[2]*plotheight
+    meanshift <- meanshift/par("pin")[2]*plotheight
+    stripshift <- stripshift/par("pin")[2]*plotheight
+    gap <- gap/par("pin")[1]*plotwidth
+  }
+
+  # If vertical, stripchart assumes offset is a factor of character
+  # width, if horizontal, character height (bug?). So correct for this
+  if (yaxis)
+    offset=flip*par("cin")[2]/par("cin")[1]
+  else
+    offset=flip
+
+  # Don't clip the chart
+  oldxpd <- par(xpd = TRUE)
+  on.exit(par(oldxpd))
+
+  stripchart(x, method="stack", vertical=yaxis, offset=offset, pch=15,
+             cex=0.2, add=TRUE, at=base+shift+stripshift, col="red")
+}
+
+stripchartexample <- function() {
+  # Sample dataset from R
+  xdata <- faithful$waiting
+  ydata <- faithful$eruptions*60
+  len=length(xdata)
+
+  # Label event with its previous duration
+
+  split=180
+
+  lag=ydata[1:len-1]
+  colours <- lag
+  colours[lag>=split] <- "red"
+  colours[!(lag>=split)] <- "blue"
+
+  xdata=xdata[2:len]
+  ydata=ydata[2:len]
+  len=length(xdata)
+
+  # Plot the data
+  plot(xdata,ydata,
+       # Omit axes
+       axes=FALSE,
+       pch=20,
+       main=sprintf("Old Faithful Eruptions (%d samples)", len),
+       xlab="Time till next eruption (min)",
+       ylab="Duration (sec)",
+       # Leave some space for the rug plot
+       xlim=c(41,max(xdata)),
+       ylim=c(70,max(ydata)),
+       cex=0.5,
+       col=colours)
+
+  axp=par("xaxp")
+  axp[3] <- axp[3]*2
+  par("xaxp"=axp)
+
+  # Add the axes, passing in the summary to provide quartile and mean
+  fancyaxis(1,summary(xdata), digits=0)
+  fancyaxis(2,summary(ydata), digits=0)
+
+  # Add the stripcharts
+  axisstripchart(xdata, 1)
+  axisstripchart(ydata, 2)
+
+  lines(c(min(xdata),max(xdata)),c(split,split),lty=2, col="gray50", xpd=FALSE)
+  h=par("cxy")[2]/2
+  points(rep(max(xdata),2),c(split+h,split-h),col=c("red","blue"), pch=20)
+  text(95,split+h, "Previous duration", adj=c(1,0.5))
+
+}
+
+stripchartexample()
+@
+
+La version 3D de la densité (estimée avec le package \textit{np} de R)
+
+<<fig=TRUE, echo=false, results=hide>>=
+library(np)
+data("faithful", package = "datasets")
+f.faithful <- npudens(~ eruptions + waiting, data = faithful)
+
+#opar <- par(mfrow=c(1,2))
+plot(f.faithful, xtrim = -0.2, view = "fixed", main = "")
+
+#plot(f.faithful, cdf = TRUE, xtrim = -0.2, view = "fixed", main = "")
+#par(opar)
+@
+
+\section{Visualier ``d'autres choses'' }
+
+\subsection{Visualiser des réseaux}
+
+\begin{figure}[h]
+\includegraphics[width = 1.0\textwidth]{Graphics/MarkTwainPajek.pdf}
+\caption{ Relations entre les personnages de Mark Twain Source:  Pajek  \url{http://pajek.imfm.si/doku.php?id=links}}
+\end{figure}
+
+
+\begin{figure}[h]
+\includegraphics[width = 0.8\textwidth]{Graphics/IAA.jpg}
+\caption{ Relations entre les différentes marques et groupes dans les IAA \url{http://www.convergencealimentaire.info/?attachment_id=238}}
+\end{figure}
+
+\begin{figure}[h]
+\includegraphics[width = 0.6\textwidth]{Graphics/Co-authorship_networks.jpg}
+\caption{ Relations entre différents co-auteurs \url{http://www.bordalierinstitute.com/target11.html}}
+\end{figure}
+
+\clearpage
+
+
+\subsection{Visualiser dans l'espace et le temps}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/bar_headed_goose_migration.jpg}
+\caption{Exemple d'information a deux niveaux, le trajet et l'altitude de la route de migration des oies. Source Hawkes et al. (2012). \url{http://sciencythoughts.blogspot.fr/2012/11/how-bar-headed-geese-cross-himalayas.html}}
+\end{figure}
+
+
+\begin{figure}[h]
+\includegraphics[width = 1.2\textwidth]{Graphics/differentielgc-IGN.jpg}
+\caption{L'IGN propose de nombreux outils de visualisation dans l'espace, par exemple pour visualiser les changements entre 2 dates. \url{http://logiciels.ign.fr/?Presentation,47/}}
+\end{figure}
+
+\clearpage
+\subsection{Visualiser des textes}
+\begin{tabular}{c}
+\includegraphics[width = 0.8\textwidth]{Graphics/WordsJAE1.jpg}\\
+\includegraphics[width = 0.8\textwidth]{Graphics/WordsJAE2.jpg} \\
+\includegraphics[width = 0.8\textwidth]{Graphics/WordsJAE3.jpg} \\
+Words of a paper \\
+Source : \url{http://www.wordle.net} \\
+\end{tabular}
+
+\clearpage
+
+\section{les outils}
+
+\subsection{Gapminder}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Gapminder.jpg}
+\caption{Snapshop of Gapminder World \url{http://www.gapminder.org/world/}}
+\end{figure}
+
+
+\subsection{R}
+cf présentation de Thibault (decembre 2012) , celle de Sébastien sur ggplot et le site \textit{R enthousiasts} \url{http://gallery.r-enthusiasts.com/thumbs.php?sort=time}.
+
+\clearpage
+\subsection{Mathematica}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/DemandMathematica.jpg}
+\caption{Outil dynamique de représentation de la demande pour 2 biens. Source mathématica \url{http://demonstrations.wolfram.com/ConsumerDemand/}}
+\end{figure}
+
+\subsection{Cortext}
+An important step when producing a network map is to carefully define the filtering steps. The first parameter one will be asked to choose is the total number of top nodes pertaining to each fields that should be mapped. The nodes are selected according to their frequency at each time period. Thus if one is mapping a co-authorship network, choosing 50 top items will produce the collaboration network between the 50 most productive authors (in terms of articles production) at each time period. For a research lab vs keywords map, 50 most productive research labs will be mapped along with the 50 most frequent keywords.
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Cortext-Tubes.jpg}
+\caption{Snapshop of some Cortext project \url{http://manager.cortext.net/projects/webmaster_cortext_fr/agroecologie-extended/data/aeext-1996-1-aeext-db~3438/1/tubes/index.htm}}
+\end{figure}
+
+\clearpage
+\subsection{Tableau}
+Commercial software proposing some unique features, on-the-fly visualisation, dynamic presentation. One drawback : Expensive and not comercially friendly!
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Tableau-Storm.jpg}
+\caption{Hurricane representation using Tableau  \url{http://www.tableausoftware.com/learn/gallery/storm-tracking}}
+\end{figure}
+
+\clearpage
+\subsection{Circos}
+Free software for circular representation of data (Genomics + others). These days many people are dumping their SUVs in preference to smaller cars. How do customers "flow" between brands and car segments? The figures below illustrate such data sets.
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/CircosMain.jpg}
+%\includegraphics[width = 0.9\textwidth]{Graphics/CircosDetail.jpg}
+%\includegraphics[width = 0.9\textwidth]{CircosExplained.jpg}
+\caption{Circular representation of data \url{http://circos.ca/}}
+\end{figure}
+
+\clearpage
+\subsection{Many-Eyes}
+An experiment  by IBM Research and the IBM Cognos software group \url{http://www-958.ibm.com/software/analytics/manyeyes/}
+
+\begin{figure}[h]
+\includegraphics[width = 0.9\textwidth]{Graphics/Many-eyes.jpg}
+\caption{Dataset can be represented using various vizualisation tools  \url{http://www-958.ibm.com/software/analytics/manyeyes/datasets}}
+\end{figure}
+
+\section{Visualiser des mathématiques}
+
+Federico Amodeo, puis René Taton, ont naguère attiré l'attention sur la présence d'épures de géométrie descriptive dans l'Underweysung der messung, alors que cette discipline n'a été élaborée par Gaspard Monge que près de trois siècles plus tard. 
+
+\begin{figure}[h]
+\includegraphics[width = 0.7\textwidth]{Graphics/Parabole.png}
+\caption{Construction d'une parabole illustrée par gaspard Monge. Source : Images des maths 2006 \url{http://images.math.cnrs.fr/Roles-des-figures-dans-la.html}}
+\end{figure}
+
+
+Dans sa figure 38 du Livre I, on voit apparaître une parabole comme enveloppe de ses tangentes. Dürer engendre la figure point par point en plaçant l'extrémité d'une règle de longueur fixe ab successivement sur les points de l'axe horizontal (dont une partie est divisée par 16 points en 16 intervalles égaux) et en la faisant passer par les points de même nom de l'axe vertical issu du point 13. L'autre extrémité désigne les points successifs de la courbe
+
+\newpage
+
+\section{Sites de référence  et d'exemples}
+\begin{tabular}{rl}
+ Les enthousiastes R:  &  \url{http://gallery.r-enthusiasts.com/thumbs.php?sort=time} \\
+% & \url{http://cran.r-project.org/web/packages/Hmisc/Hmisc.pdf} \\
+% & \url{http://biostat.mc.vanderbilt.edu/wiki/Main/SweaveTemplate} \\
+% & \url{http://biostat.mc.vanderbilt.edu/wiki/Main/SweaveLatex} \\
+DataVisualization.ch & \url{http://selection.datavisualization.ch/}\\
+Nathan Yau's Flowchart & \url{http://flowingdata.com/category/tutorials/}\\
+Places \& Spaces & \url{http://scimaps.org/maps/browse/}\\
+La fonderie  &  \url{http://outils.expoviz.fr/}\\
+We love dataviz &  \url{http://datavis.tumblr.com/}\\
+DataVisualization  & \url{http://www.datavisualization.fr/}\\
+Logiciels de l'IGN & \url{http://logiciels.ign.fr/?Presentation,47}\\
+Theresa Vanderbilt R Clinic &\url{http://biostat.mc.vanderbilt.edu/wiki/Main/RClinic} \\
+Circos & \url{http://circos.ca/}\\
+\end{tabular}
+
+
+
+
+\end{document}
