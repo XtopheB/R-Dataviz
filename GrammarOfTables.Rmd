@@ -1,0 +1,409 @@
+---
+title: "Grammar of tables"
+subtitle: "A step-by-step case study to create nice tables "
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+```
+
+This work is directly inspired by the work of Mock (2020). 
+
+*The Mockup Blog: gt - a (G)rammar of (T)ables.* [Full Blog and code](https://themockup.blog/posts/2020-05-16-gt-a-grammer-of-tables/)
+
+```{r}
+# Code from Mock(2020) : https://themockup.blog/posts/2020-05-16-gt-a-grammer-of-tables/#tldr-full-code
+library(gt) # for static tables
+library(tidyverse) # all the things
+library(paletteer) # for all the palettes
+
+playoff_salary <- read_csv("https://raw.githubusercontent.com/jthomasmock/radix_themockup/master/_posts/2020-05-13-qb-salaries-vs-playoff-appearances/playoff_salary.csv")
+```
+
+# A glimpse of the data
+
+```{r}
+glimpse(playoff_salary)
+```
+# Basic Table
+
+```{r}
+playoff_salary %>%
+  head() %>%
+  gt()
+```
+
+# Format by value
+
+
+```{r}
+playoff_salary %>%
+  head() %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      # Using a function from paletteer to generate a vector of colors
+      # Note that you need to wrap paletteer_d outputs in as.character()
+      palette = as.character(paletteer::paletteer_d("ggsci::red_material", n = 5)),
+      # Domain is from scales::col_numeric
+      # Domain = The possible values that can be mapped
+      # We don't HAVE to set a range for this since
+      # we're using it inside data_color()
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      # custom defined values - notice that order matters!
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  )
+```
+
+
+# Change palette of colors
+
+```{r}
+playoff_salary %>%
+  head() %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      # custom defined values - notice that order matters!
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      # custom defined values - notice that order matters!
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  )
+```
+
+# Format currency
+
+```{r}
+playoff_salary %>%
+  head() %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  ##########################
+  ### This section changed
+  ##########################
+  fmt_currency(
+    # Define the columns to change
+    columns = vars(salary),
+    # How many decimals to round to
+    decimals = 1,
+    # glue style pattern match & string conversion
+    pattern = "{x} M"
+  ) %>%
+  # Align the now character column to be right-aligned
+  cols_align(
+    align = "right",
+    columns = vars(salary)
+  )
+```
+
+# Add borders
+
+```{r}
+playoff_salary %>%
+  head() %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  fmt_currency(
+    columns = vars(salary),
+    decimals = 1,
+    pattern = "{x} M"
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = vars(salary)
+  ) %>% 
+  ##########################
+  ### This section changed
+  ##########################
+  # We use tab_style() to change style of cells
+  # cell_borders() provides the formatting
+  # locations tells it where
+  # add a border to left of the Total column
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "left",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(Total)
+      )
+    )
+  ) %>%
+  # We use tab_style() to change style of cells
+  # cell_borders() provides the formatting
+  # locations tells it where
+  # Add black borders to the bottom of all the column labels
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  )
+```
+
+# Add titles
+
+```{r}
+complete_table <- playoff_salary %>%
+  # REMOVED head() %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  fmt_currency(
+    columns = vars(salary),
+    decimals = 1,
+    pattern = "{x} M"
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = vars(salary)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "left",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(Total)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  ##########################
+  ### This section changed
+  ##########################
+  cols_label(
+    player = "Player",
+    salary = "Salary"
+  ) %>%
+  tab_source_note("TABLE: @THOMAS_MOCK | DATA: PRO FOOTBALL REFERENCE & OVER THE CAP") %>%
+  tab_header(
+    title = md("**2014 - 2019 Salary and Playoff Appearances**"),
+    subtitle = "QBS limited to playoff games where they threw a pass"
+  )
+complete_table
+```
+
+# Change fonts
+
+```{r full}
+playoff_salary %>%
+  gt() %>%
+  data_color(
+    columns = vars(salary),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  data_color(
+    columns = vars(Total),
+    colors = scales::col_numeric(
+      palette = c("#ffffff", "#f2fbd2", "#c9ecb4", "#93d3ab", "#35b0ab"),
+      domain = NULL
+    )
+  ) %>%
+  fmt_currency(
+    columns = vars(salary),
+    decimals = 1,
+    pattern = "{x} M"
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = vars(salary)
+  ) %>% 
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "left",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_body(
+        columns = vars(Total)
+      )
+    )
+  ) %>%
+  tab_style(
+    style = list(
+      cell_borders(
+        sides = "bottom",
+        color = "black",
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      cells_column_labels(
+        columns = gt::everything()
+      )
+    )
+  ) %>%
+  cols_label(
+    player = "Player",
+    salary = "Salary"
+  ) %>%
+  tab_source_note("TABLE: @THOMAS_MOCK | DATA: PRO FOOTBALL REFERENCE & OVER THE CAP") %>%
+  tab_header(
+    title = md("**2014 - 2019 Salary and Playoff Appearances**"),
+    subtitle = "QBS limited to playoff games where they threw a pass"
+  ) %>%
+  # Adjust numeric font
+  tab_style(
+    style = list(
+      cell_text(
+        font = "Fira Mono",
+        align = "center"
+      )
+    ),
+    locations = list(
+      cells_body(columns = vars(Wildcard, Division, Conference, Superbowl, Total, salary))
+    )
+  ) %>%
+  # Style header font
+  gt::tab_style(
+    style = list(
+      cell_text(font = "Karla", weight = "bold")
+    ),
+    locations = list(
+      cells_column_labels(gt::everything())
+    )
+  ) %>%
+  # Adjust font of Player Column
+  tab_style(
+    style = list(
+      cell_text(font = "Karla")
+    ),
+    location = list(
+      cells_body(columns = vars(player))
+    )
+  ) %>%
+  # Adjust title font
+  tab_style(
+    style = list(
+      cell_text(
+        font = "Fira Mono",
+        align = "left"
+      )
+    ),
+    locations = list(
+      cells_title(groups = "title")
+    )
+  ) %>%
+  # Adjust sub-title font
+  tab_style(
+    style = list(
+      cell_text(
+        font = "Fira Mono",
+        align = "left"
+      )
+    ),
+    locations = list(
+      cells_title(groups = "subtitle")
+    )
+  )
+```
+

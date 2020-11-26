@@ -1,16 +1,17 @@
 ---
-title: "An overview of the different type of graphics"
+title: "Vizualizing in Many Dimensions"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document: 
-    keep_tex: yes  ## keep images in folder + latex
+  pdf_document:
+    keep_tex: yes
   html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
+  word_document: default
 ---
 
 
@@ -33,7 +34,6 @@ ggplotColours <- function(n = 6, h = c(0, 360) + 15){
 ```
 
 ```{r libraries}
-library(readxl)
 library(tidyverse)
 library(viridis)
 library(ggthemes)
@@ -45,116 +45,363 @@ library(kableExtra)
 ```
 
 ## Data sets {-}
-
-```{r SDGData}
-
-# ---  SDGs Data --- 
-
-# Data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO
-# Only countries with letters A-C selected to avoid uneccessary heavy file
-
-# Poverty index  (Goal 1.1.1)  Proportion of population below poverty line
-SDGdata1<- readxl::read_xlsx("Data/SDGDataSample.xlsx", 
-                             col_names = TRUE, sheet = "Goal1")
-
-SDGdata1$Poverty <- as.numeric(SDGdata1$Value)
-
-# Select only a portion of the data
-SDGPov <- subset(SDGdata1, Poverty >5 & Sex =="BOTHSEX" )
-SDGPov.caption <- "Indicator 1.1.1 (Prop. of pop. below international poverty line)"
+We use the data from the [World bank data base](http://wdi.worldbank.org/tables) for 
+*all countries*
+* WV.1 Size of the economy
+* WV.2 Global goals: ending poverty and improving livesDownload
+* WV.3 Global goals: promoting sustainability
 
 
-# Child Mortality (Goal 3.2.1)
-SDGdata3.2<- readxl::read_xlsx("Data/SDGDataSample.xlsx", 
-                             col_names = TRUE, sheet = "Goal3-2-1")
+```{r Data}
+library(readxl)
+# ---  SDGs Data from World bank --- 
 
-SDGdata3.2$ChildDeath <- as.numeric(SDGdata3.2$Value)
+# Data downloaded from  http://wdi.worldbank.org/tables
+# All countries (last access 2020-11-25)
+# NB: We needed to open the file and save tehm as Worksheet before using them...
 
-# Select only a portion of the data
-SDGChildDeath <- subset(SDGdata3.2, ChildDeath >1 & Sex =="BOTHSEX" )
-SDGChildDeath.caption <- SDGdata3.2$SeriesDescription[1]
+WV1<- read_excel("Data/WV.1_Size_of_the_economy.xlsx", col_names = TRUE)
+WV2<- read_excel("Data/WV.2_Global_goals_ending_poverty_and_improving_lives.xlsx")
+WV3<- read_excel("Data/WV.3_Global_goals_promoting_sustainability.xlsx")
+Countries.data<- read.csv("Data/UNSDCountriesMethodology.csv", sep = ",")
+
+## regions Colors
+#my_cols <- c("#00AFBB", "#E7B800", "#FC4E07") 
+#my_cols <-c("#6b03fc", "#4287f5", "#69b3a2", "#03fca1", "#dffc03", "#E8E8E8") )
+my_cols <- c(ggplotColours(n = 5), "#E8E8E8") 
+
+my_cols <- c("#F8766D","#A3A500" , "#69b3a2","#00B0F6", "#E76BF3", "#E8E8E8")
+
+names(WV1)[1] <- "country"
+names(WV2)[1] <- "country"
+names(WV3)[1] <- "country"
+
+# we keep short labels 
+Shortlabels <- c(names(WV1),names(WV2[,2:ncol(WV2)]), 
+                 names(WV3[, 2:ncol(WV3)]), 
+                 names(Countries.data[, -9]))
 
 
-# --- Here we generate a dataset with categorical values 
-#  Data set with age recorded by country
-set.seed(2512)
-MyDataNumCat <- data.frame(
-  Country=c( rep("A",500), rep("B",500), rep("B",500), rep("C",20), rep('D', 100)  ),
-  Age=c( rnorm(500, 20, 5), rnorm(500, 13, 1), rnorm(500, 18, 1), rnorm(20, 25, 4), rnorm(100, 12, 1) )
-)
 
-#  Avg by Country (category)
-MyDataNumCatAvg <- MyDataNumCat %>%
-  group_by(Country) %>%
-  summarize(
-    Age.Avg = mean(Age)
-  )
+# Adjust the labels (long version)
+library(Hmisc)
+# Adjust the dataframes and  labels 
+CleanWV <- function(WVdata, lastindex){
+  for (i in 2: ncol(WVdata)){
+    names(WVdata)[i] <- ifelse(startsWith(names(WVdata)[i], ".."),
+                               names(WVdata)[i-1], names(WVdata)[i])
+    
+    # the first three lines are variables descriptions
+     names(WVdata)[i]  <- paste0(names(WVdata)[i],"-",
+                              ifelse(is.na(WVdata[1,i]), "", WVdata[1,i]), 
+                              ifelse(is.na(WVdata[2,i]), "", WVdata[2,i]), 
+                              ifelse(is.na(WVdata[3,i]), "", WVdata[3,i])) 
+    
+  }
+  # removing last lines (sources)
+  WVdata <- WVdata[1:lastindex,]
+  
+  # removing first 3 lines
+  WVdata <- WVdata[-c(1,2,3),]  
+}
 
+WV1 <- CleanWV(WV1, 230)
+WV2 <- CleanWV(WV2, 229)
+WV3 <- CleanWV(WV3, 229)
+
+
+# Merging the 3 datasets
+WV <- merge(WV1, WV2, by = "country")
+WV <- merge(WV, WV3, by = "country")
+
+# Transforming 
+WV[,2:ncol(WV)] = sapply(WV[,2:ncol(WV)],as.numeric)
+
+#Joining with regional attributes of countries
+
+WV <- merge(WV, Countries.data, by.x = "country", by.y = "Country.or.Area", all.x = TRUE)
 ```
 
 
-```{r TableFull, echo = FALSE, results=TRUE}
- t <-  kbl(SDGPov[1:9,
-                     c("Indicator","Age", "Poverty" ,"GeoAreaName")],
-           caption = SDGPov.caption
-)  
+```{r DataLabelCleaning}
+# Cleaning variables names
+library(janitor)
+LongLabels <- names(WV) # keeping for future usage
 
+names(WV) <-Shortlabels
+WV <-  janitor::clean_names(WV)
+
+names(WV)[8] <-  "PPP Income per cap"
+names(WV)[10] <- " GDP growth per cap "
+names(WV)[11] <- " Share of Income (<20%)"
+names(WV)[12] <- " Child malnutrition (%)"
+names(WV)[15] <- " HIV (per 1000)"
+names(WV)[16] <- " Tuberculosis (per 100k)"
+names(WV)[17] <- " Road Mortality (per 100k)"
+names(WV)[19] <- " Male employment (%)"
+names(WV)[20] <- " Female employment (%)"
+names(WV)[22] <- " Pop. Access Water (%)"
+names(WV)[23] <- " Pop. Access Sanitary (%)"
+names(WV)[27] <- " Slums Pop.(%)"
+names(WV)[29] <- " Savings (% of GNI)"
+names(WV)[30] <- " CO2 per cap."
+names(WV)[31] <- " Marine areas (%)"
+
+# removing  variables (country classification)
+WV <- WV %>%
+  select(!c(34:35, 40:43, 45:47, 49))
+
+var.select <- c(4, 8, 10:33)
+var.shortlist <-c(8, 10:16, 18, 20:22, 29:30)
+
+```
+
+### Glimpse of the data{-}
+
+```{r TableFull, echo = FALSE, results=TRUE}
+t <-  kbl(WV[1:10,c(1,var.shortlist)])
 kable_styling(t,full_width = F)
 
 # For interactive view of recording 
 # View(SDGPov[c("Indicator","Age", "Poverty" )])
 ```
-# Visualizing one numerical variable
 
 
-```{r TableUni, echo = FALSE, results=TRUE}
- t1 <-  kbl(SDGPov[1:9,
-                     c("Poverty")],
-           caption = "Poverty Data (Sample)"
-)  
+# Missing values 
 
-kable_styling(t1,full_width = F)
-```
+```{r}
+library(naniar)
+# See https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
+# miss_var_summary(WV, order = TRUE)
 
-```{r summaryOne}
+gg_miss_var(subset(WV, is.na(region_name)== FALSE),
+            show_pct = TRUE, 
+            facet = region_name ) + 
+  labs(y = "Missing observations (%)") +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.y =  element_text(size=4)
+  )
 
-print(summary(SDGPov$Poverty))
-
-```
-
-
-
-
-```{r Histogram}
-ggplot(data= SDGPov) +
- aes(x = Poverty) +
- geom_histogram(bins = 39L, fill = SIAP.color, aes(y=..density..) )+
-   ggtitle("Histogram")+ 
-  xlab(SDGPov.caption)+
- theme_tufte()
 ```
 
 
-```{r Density }
-ggplot(data= SDGPov) +
- aes(x = Poverty) +
-    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
-   ggtitle("Density estimate")+ 
-  xlab(SDGPov.caption)+
- theme_tufte()
+```{r}
+gg_miss_fct(x = subset(WV[,], is.na(region_name)== FALSE), fct= region_name) +
+  labs(y = "Missing observations (%)") +
+  theme(
+    plot.title = element_text(size=10),
+    legend.position = "bottom",
+    axis.text.y =  element_text(size=5)
+  )
 
+```
+
+## Imputing missing values (for a better visual demonstration){-}
+
+
+```{r}
+library(Amelia)
+# Computing values to input (long computation)
+#res.amelia <- amelia(WV[,2:33], m = 2)  
+#save(res.amelia, file ="Data/res.amelia")
+
+load(file = "Data/res.amelia")
+
+# Binding the imputed variables 
+WV.comp <- cbind(WV[,1], res.amelia$imputations$imp1, WV[,34:ncol(WV)])
+names(WV.comp)[1] <- "country"
+
+missmap(WV.comp, 
+        rank.order = TRUE)
+
+```
+
+# Scatterplot Matrix simple
+
+```{r scattermatrixsmall}
+
+pairs(WV.comp[,c(8, 10,12, 21, 30)], pch = 19, 
+      col = my_cols[WV$region_name],
+      #col = "grey",
+      upper.panel = NULL)
+```
+
+# Scatterplot Matrix full
+
+
+```{r scattermatrix}
+
+pairs(WV.comp[,var.shortlist], pch = 19, 
+       col = my_cols[WV$region_name],
+      # col = "grey",     
+      upper.panel = NULL)
+```
+
+
+# Correlation Matrix
+
+```{r}
+library(ggcorrplot)
+
+# We compute the correlation matrix of the covariates
+corr_coef<-cor(WV.comp[, c(var.shortlist)],use = "p")
+#And then plot it with nice options 
+ggcorrplot(corr_coef, 
+           type = "lower",         # lower triangle of the matrix only
+           #hc.order = TRUE,        # variable sorted from highest to lowest
+           outline.col = "white",  #Color options
+           lab = FALSE)
+
+
+
+```
+
+
+
+# Parallel Coordinates chart
+
+```{r parallelMas}
+library(MASS)
+
+#parcoord(WV[,c(4,6, 8, 10)], col = "grey")
+parcoord(WV.comp[,var.shortlist], col = "grey", 
+         var.label = TRUE)
+
+
+```
+
+
+```{r ParallelGblack }
+library(GGally)
+library(viridis)
+library(hrbrthemes)
+ggparcoord(WV.comp[,c(var.shortlist, 35)],
+    columns = c(1: length(var.shortlist)),
+    #groupColumn = "region_name",
+    showPoints = FALSE, 
+    scale="uniminmax",    # "std" "center",
+    #missing = "median",  # Not needed since WV.com
+    title = "Parallel Coordinate Plot for Global Economy variables",
+    alphaLines = 0.2
+    ) + 
+ # scale_color_manual(values=c("#69b3a2", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
+ # scale_color_viridis(discrete=TRUE) +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+```{r ParallelG1 }
+p<-ggparcoord(WV.comp[,c(1, var.shortlist, 35)],
+    columns = c(2: length(var.shortlist)),
+    groupColumn = "region_name",
+    showPoints = FALSE, 
+    scale="uniminmax",    # "std" "center",
+    #missing = "median", 
+    title = "Parallel Coordinate Plot for Global Economy variables",
+    alphaLines = 0.3
+    ) + 
+  scale_color_manual(values=my_cols) +
+  geom_line(aes(text= paste( country, "-", region_name)))+
+ # scale_color_viridis(discrete=TRUE) +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=8, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+p
+```
+
+
+```{r}
+library(plotly)
+ggplotly(p, 
+         tooltip = c("country,region_name"),
+         alpha = 0.6)
+
+```
+
+
+```{r}
+ggparcoord(WV.comp,
+    columns = var.shortlist,
+    groupColumn = "region_name",
+    showPoints = FALSE, 
+    scale="uniminmax",
+    missing = "median",
+    title = paste("Parallel Coordinate Plot for Global Economy variables", "\n",
+                  "Focusing on a specific region"),
+    alphaLines = 0.9
+    ) + 
+ scale_color_manual(values=c( "#F8766D", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
+ # scale_color_viridis(discrete=TRUE) +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=6, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+```
+
+```{r parcoords }
+library(parcoords)
+# see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
+
+
+parcoords(WV.comp[, c(35, var.shortlist)],
+  rownames = FALSE,
+  brushMode = '1D-axes',
+  brushPredicate = "or", # "and" "or"
+  alphaOnBrushed = 0.2,
+  color = SIAP.color, alpha = 0.5,
+  bundleDimension = " GDP growth per cap ",  # One variable
+  bundlingStrength = 1, 
+  smoothness = 0,  # lines = 0, curves = 1
+  reorderable = TRUE)
+```
+
+
+```{r parcoordssmooth }
+library(parcoords)
+# see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
+
+
+parcoords(WV.comp[, c(35, var.shortlist)],
+  rownames = FALSE,
+  brushMode = '1D-axes',
+  brushPredicate = "or", # "and" "or"
+  alphaOnBrushed = 0.2,
+  color = SIAP.color, alpha = 0.2,
+  bundleDimension = " GDP growth per cap ",  # One variable
+  bundlingStrength = 1, 
+  smoothness = 0.2,  # lines = 0, curves = 1
+  reorderable = TRUE)
+```
+
+
+
+```{r}
+knitr::knit_exit()
 ```
 
 
 
 ```{r Point}
-ggplot(data= SDGPov) +
- aes(x = Poverty, y ="") +
-    geom_point(color=SIAP.color, size=0.9, alpha=0.9) +
-   ggtitle("Points (raw values)")+ 
-  xlab(SDGPov.caption)+
- theme_tufte()
-
+# New data(
+#  https://databank.worldbank.org/reports.aspx?source=sustainable-development-goals-%28sdgs%29#
+  
 ```
 
 ```{r Rug}
