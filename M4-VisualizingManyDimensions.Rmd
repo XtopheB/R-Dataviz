@@ -47,6 +47,7 @@ library(kableExtra)
 ## Data sets {-}
 We use the data from the [World bank data base](http://wdi.worldbank.org/tables) for 
 *all countries*
+
 * WV.1 Size of the economy
 * WV.2 Global goals: ending poverty and improving livesDownload
 * WV.3 Global goals: promoting sustainability
@@ -69,8 +70,12 @@ Countries.data<- read.csv("Data/UNSDCountriesMethodology.csv", sep = ",")
 #my_cols <- c("#00AFBB", "#E7B800", "#FC4E07") 
 #my_cols <-c("#6b03fc", "#4287f5", "#69b3a2", "#03fca1", "#dffc03", "#E8E8E8") )
 my_cols <- c(ggplotColours(n = 5), "#E8E8E8") 
-
 my_cols <- c("#F8766D","#A3A500" , "#69b3a2","#00B0F6", "#E76BF3", "#E8E8E8")
+
+library(RColorBrewer)
+# Tree colors
+my_highlow <- c('#fc8d59','#ffffbf','#91bfdb')
+
 
 names(WV1)[1] <- "country"
 names(WV2)[1] <- "country"
@@ -146,6 +151,7 @@ names(WV)[27] <- " Slums Pop.(%)"
 names(WV)[29] <- " Savings (% of GNI)"
 names(WV)[30] <- " CO2 per cap."
 names(WV)[31] <- " Marine areas (%)"
+names(WV)[48] <- " Developped"
 
 # removing  variables (country classification)
 WV <- WV %>%
@@ -169,7 +175,23 @@ kable_styling(t,full_width = F)
 
 # Missing values 
 
-```{r}
+```{r missing}
+library(naniar)
+# See https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
+# miss_var_summary(WV, order = TRUE)
+
+gg_miss_var(subset(WV, is.na(region_name)== FALSE),
+            show_pct = TRUE) + 
+  labs(y = "Missing observations (%)") +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.y =  element_text(size=4)
+  )
+
+```
+
+## By region{-}
+```{r missing1}
 library(naniar)
 # See https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
 # miss_var_summary(WV, order = TRUE)
@@ -186,7 +208,7 @@ gg_miss_var(subset(WV, is.na(region_name)== FALSE),
 ```
 
 
-```{r}
+```{r missing2}
 gg_miss_fct(x = subset(WV[,], is.na(region_name)== FALSE), fct= region_name) +
   labs(y = "Missing observations (%)") +
   theme(
@@ -200,7 +222,7 @@ gg_miss_fct(x = subset(WV[,], is.na(region_name)== FALSE), fct= region_name) +
 ## Imputing missing values (for a better visual demonstration){-}
 
 
-```{r}
+```{r missing3}
 library(Amelia)
 # Computing values to input (long computation)
 #res.amelia <- amelia(WV[,2:33], m = 2)  
@@ -217,11 +239,233 @@ missmap(WV.comp,
 
 ```
 
+
+# Continuous and discrete
+
+## Histogram 
+
+```{r HistoSpineGrey}
+WV %>%
+ filter(!is.na(` CO2 per cap.`)) %>%
+ filter(!is.na(region_name)) %>%
+ filter(` Developped` %in% 
+    c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = ` CO2 per cap.`  ) +
+ geom_histogram(bins = 61L, fill = "#bdbdbd") +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+
+```
+
+# Rather than stacking histograms, it's easier to compare frequency
+
+
+```{r HistoSpine}
+WV %>%
+ filter(!is.na(` CO2 per cap.`)) %>%
+ filter(!is.na(region_name)) %>%
+ filter(` Developped` %in% 
+    c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = ` CO2 per cap.`, fill = region_name) +
+ geom_histogram(bins = 61L) +
+ scale_fill_hue() +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+
+```
+
+# Categories
+
+```{r CatData}
+# We create new categorical variables
+# Computing quantiles  of CO2
+Q_CO2=quantile(WV$` CO2 per cap.`,c(0,1/3,2/3,1), na.rm = TRUE)
+Q_CO2[1]=Q_CO2[1]-.00005
+
+# Computing quantiles  of population density
+Q_pop=quantile(WV$population_density,c(0,1/4,1/2, 3/4, 1), na.rm = TRUE)
+Q_pop[1]=Q_pop[1]-.00005
+
+
+WV <- WV %>%
+  mutate(
+    CO2_emissions_cat = cut(` CO2 per cap.`,  breaks=Q_CO2, 
+                            labels=c("low","middle","high")),
+    Country_density_cat = cut(population_density,  breaks=Q_pop, 
+                      labels=c("lower", "low","high", "highest")),
+
+  )
+#names(WV)[ncol(WV)] <- "CO2 emission per cap. (cat.) "
+
+```
+
+## Mosaic plot
+
+```{r mosaic}
+
+
+mosaicplot(table(WV$region_name, WV$CO2_emissions_cat),
+  #color = TRUE,
+  #shade = FALSE,
+   col = rev(my_highlow), 
+  main = " Mosaic plot of CO2 emisions per region", 
+  xlab = "Regions", # label for x-axis
+  ylab = paste("CO2 emissions \n (High Medium, Low)") # label for y-axis
+)
+```
+
+## Stacked bars
+
+```{r StackedBar}
+WV %>%
+ filter(
+   !is.na(` CO2 per cap.`),
+   !is.na(region_name),
+   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = CO2_emissions_cat ,fill = region_name, weight = population_density) +
+ geom_bar() +
+ scale_fill_hue() +
+ ggtitle("Population density per CO2 emissions classification of countries (Stacked bars)" ) +
+ ylab("Population density")+
+ xlab(" CO2 emissions category")+
+ theme_tufte() +
+ theme(legend.position = "bottom")
+```
+
+
+
+```{r StackedBarDodged}
+WV %>%
+ filter(
+   !is.na(` CO2 per cap.`),
+   !is.na(region_name),
+   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = CO2_emissions_cat ,fill = region_name, weight = population_density) +
+ geom_bar(position = "dodge") +
+ggtitle("Population density per CO2 emissions classification of countries (dodged bars)" ) +
+
+ ylab("Population density")+
+ xlab("CO2 emissions category")+
+ scale_fill_hue() +
+ theme_tufte() +
+ theme(legend.position = "bottom")
+```
+
+
+```{r StackedBarSmall}
+WV %>%
+ filter(
+   !is.na(` CO2 per cap.`),
+   !is.na(region_name),
+   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = CO2_emissions_cat ,fill = CO2_emissions_cat, weight = population_density) +
+ geom_bar(position = "dodge") +
+ facet_wrap(~region_name) +
+ labs(title ="Population density per CO2 emissions classification of countries \n(Small multiple bars)" ) +
+ ylab("Population density")+
+ xlab("CO2 emissions category")+
+ scale_fill_brewer(palette = "Oranges") +
+ theme_tufte() +
+ theme(legend.position = "bottom")
+```
+
+# Dual version, looking at CO2 emissions by density categories
+
+```{r StackedCO2}
+WV %>%
+ filter(
+   !is.na(Country_density_cat),
+   !is.na(region_name),
+   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = Country_density_cat, fill = region_name, weight = ` CO2 per cap.`) +
+ geom_bar() +
+ ggtitle("CO2 emissions per population density classification of countries (stacked bars)" ) +
+ ylab("CO2 emissions per cap.")+
+ xlab("Countries density levels")+
+ scale_fill_hue() +
+  theme_tufte() +
+ theme(legend.position = "bottom")
+```
+
+
+
+```{r StackedCO2Dogde}
+WV %>%
+ filter(
+   !is.na(Country_density_cat),
+   !is.na(region_name),
+   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
+ ggplot() +
+ aes(x = Country_density_cat, fill = region_name, weight = ` CO2 per cap.`) +
+ geom_bar(position = "dodge") +
+ ggtitle("CO2 emissions per population density classification of countries (dodged bars)" )+
+ ylab("CO2 emissions per cap.")+
+ xlab("Countries density levels")+
+ scale_fill_hue() +
+  theme_tufte() +
+ theme(legend.position = "bottom")
+```
+# Scatterplot 
+
+```{r ScatterSize}
+
+S <-WV %>%
+ filter(` Developped` %in% c("Developing", "Developed") | is.na(` Developped`),
+        population_density < 5000, 
+        !is.na(region_name)) %>%
+ ggplot() +
+ aes(x = population_density, y = ` CO2 per cap.`, colour = region_name, size = population) +
+ geom_point() +
+ ggtitle(" Relationship between CO2 emissions and country density") +
+ ylab("CO2 emissions per cap.")+
+ xlab("Countries density (people per sq. km)")+
+ theme_tufte() +
+ theme(legend.position = "bottom", legend.box="vertical")
+
+S
+
+```
+
+## Interactive version 
+
+```{r ScatterPlotly}
+library(plotly)
+#ggplotly(S)
+style(S, hoverinfo = "none", traces = 1:2)
+```
+# Small multiple
+
+
+```{r Scattermultiple}
+WV %>%
+ filter(` Developped` %in% c("Developing", "Developed") | is.na(` Developped`),
+        population_density < 5000, 
+        !is.na(region_name)) %>%
+ ggplot() +
+ aes(x = population_density, y = ` CO2 per cap.`, colour = region_name) +
+ geom_point() +
+ facet_wrap(~region_name)+
+ ggtitle(" Relationship between CO2 emissions and country density per region") +
+ ylab("CO2 emissions per cap.")+
+ xlab("Countries density (people per sq. km)")+
+ theme_tufte() +
+ theme(legend.position = "bottom")
+```
+
+
+
 # Scatterplot Matrix simple
 
-```{r scattermatrixsmall}
+```{r Scattermatrixsmall}
 
-pairs(WV.comp[,c(8, 10,12, 21, 30)], pch = 19, 
+pairs(subset(WV.comp[,c(10, 12,15, 30)], !is.na(WV.comp$region_name)),
+             , pch = 19, 
       col = my_cols[WV$region_name],
       #col = "grey",
       upper.panel = NULL)
@@ -230,38 +474,179 @@ pairs(WV.comp[,c(8, 10,12, 21, 30)], pch = 19,
 # Scatterplot Matrix full
 
 
-```{r scattermatrix}
+```{r Scattermatrix}
 
 pairs(WV.comp[,var.shortlist], pch = 19, 
        col = my_cols[WV$region_name],
       # col = "grey",     
-      upper.panel = NULL)
+      upper.panel = NULL,
+      cex.labels = 0.3)
 ```
+
+
+
+
+# Combined Scatterplot/correlation with GGally::ggpairs
+
+```{r ggpairs1}
+library(GGally)
+WVshort <- WV.comp[,c(10,12,15,30,37)] %>%
+  filter(
+  !is.na(WV.comp$region_name)
+  )
+ 
+ggpairs(WVshort,
+        columns = 1:4,
+        columnLabels = gsub('.', ' ', colnames(WVshort[,1:4]), fixed = T), 
+        labeller = label_wrap_gen(10), 
+        upper = "blank",
+        #upper = list(continuous = wrap("cor", size = 9)),
+        aes(colour = WVshort$region_name, alpha= 0.1),
+        title="Correlogram for 4 variables") +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+```{r ggpairs2}
+WVshort <- WV.comp[, c(var.shortlist[1:10], 37)] 
+ 
+ggpairs(WVshort,
+        columns = 1:10,
+        columnLabels = gsub('.', ' ', colnames(WVshort[,1:10]), fixed = T), 
+        labeller = label_wrap_gen(10), 
+        upper = "blank",
+        lower = list(continuous = wrap("points", alpha = 0.3, size=0.2)),
+        #upper = list(continuous = "cor"),
+        aes(colour = WV$region_name, alpha= 0.1 ), 
+        title="Correlogram for 10 variables") +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+
+```{r ggpairs3}
+WVshort <- WV.comp[, c(2:32, 37)] 
+ 
+gg <-ggpairs(WVshort,
+        columns = 1:31,
+        columnLabels = gsub('.', ' ', colnames(WVshort[,1:31]), fixed = T, ), 
+        labeller = label_wrap_gen(10), 
+        lower = list(continuous = wrap("points", alpha = 0.3, size=0.05)),
+        upper = "blank",
+        #upper = list(continuous = wrap("cor", size = 9)),
+        aes(colour = WVshort$region_name, alpha= 0.1),
+        title="Correlogram for 30+ variables")
+
+gg + theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=4, angle = 60, hjust = 1), 
+    axis.text.y =  element_text(size=4), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+
+
+
 
 
 # Correlation Matrix
 
-```{r}
+```{r CorrelationMatrix1}
 library(ggcorrplot)
 
 # We compute the correlation matrix of the covariates
-corr_coef<-cor(WV.comp[, c(var.shortlist)],use = "p")
+corr_coef<-cor(WV.comp[,c(30, 10, 12,15,18, 22)],use = "p")
+
 #And then plot it with nice options 
 ggcorrplot(corr_coef, 
            type = "lower",         # lower triangle of the matrix only
            #hc.order = TRUE,        # variable sorted from highest to lowest
            outline.col = "white",  #Color options
-           lab = FALSE)
-
-
+           lab = TRUE)+
+  theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    #legend.position = "bottom"
+  )
 
 ```
 
 
+```{r CorrelationMatrix2}
+library(ggcorrplot)
+
+# We compute the correlation matrix of the covariates
+corr_coef<-cor(WV.comp[, 2:33],use = "p")
+
+#And then plot it with nice options 
+ggcorrplot(corr_coef, 
+           type = "lower",         # lower triangle of the matrix only
+           # hc.order = TRUE,        # variable sorted from highest to lowest
+           outline.col = "white",  #Color options
+           lab = FALSE)+
+  theme_tufte() +
+   theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=6, angle = 60, hjust = 1),
+    legend.title = element_text(size=8),
+    legend.key.size = unit(0.5,"line")
+    #axis.text.x =  element_blank(),
+    #legend.position = "bottom"
+  )
+```
+
+
+
+```{r CorrelationMatrix3}
+library(ggcorrplot)
+
+# We compute the correlation matrix of the covariates
+corr_coef<-cor(WV.comp[, 2:33],use = "p")
+
+#And then plot it with nice options 
+ggcorrplot(corr_coef, 
+           type = "lower",         # lower triangle of the matrix only
+           hc.order = TRUE,        # variable sorted from highest to lowest
+           outline.col = "white",  #Color options
+           lab = FALSE)+
+  theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=6, angle = 60, hjust = 1),
+    legend.title = element_text(size=8),
+    legend.key.size = unit(0.5,"line")
+    #axis.text.x =  element_blank(),
+    #legend.position = "bottom"
+  )
+```
 
 # Parallel Coordinates chart
 
-```{r parallelMas}
+```{r ParallelMass}
 library(MASS)
 
 #parcoord(WV[,c(4,6, 8, 10)], col = "grey")
@@ -283,7 +668,33 @@ ggparcoord(WV.comp[,c(var.shortlist, 35)],
     scale="uniminmax",    # "std" "center",
     #missing = "median",  # Not needed since WV.com
     title = "Parallel Coordinate Plot for Global Economy variables",
-    alphaLines = 0.2
+    alphaLines = 0.9
+    ) + 
+ # scale_color_manual(values=c("#69b3a2", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
+ # scale_color_viridis(discrete=TRUE) +
+ theme_tufte() +
+  theme(
+    plot.title = element_text(size=10), 
+    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
+    #axis.text.x =  element_blank(),
+    legend.position = "bottom"
+  )
+
+
+```
+
+
+
+
+```{r ParallelGrey }
+ggparcoord(WV.comp[,c(var.shortlist, 35)],
+    columns = c(1: length(var.shortlist)),
+    #groupColumn = "region_name",
+    showPoints = FALSE, 
+    scale="uniminmax",    # "std" "center",
+    #missing = "median",  # Not needed since WV.com
+    title = "Parallel Coordinate Plot for Global Economy variables",
+    alphaLines = 0.3
     ) + 
  # scale_color_manual(values=c("#69b3a2", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
  # scale_color_viridis(discrete=TRUE) +
@@ -322,8 +733,9 @@ p<-ggparcoord(WV.comp[,c(1, var.shortlist, 35)],
 p
 ```
 
+# Interactive version
 
-```{r}
+```{r ParallelPlotly}
 library(plotly)
 ggplotly(p, 
          tooltip = c("country,region_name"),
@@ -332,7 +744,7 @@ ggplotly(p,
 ```
 
 
-```{r}
+```{r ParallelSpecific}
 ggparcoord(WV.comp,
     columns = var.shortlist,
     groupColumn = "region_name",
@@ -355,6 +767,8 @@ ggparcoord(WV.comp,
 
 ```
 
+# Another interactive version (axes reordering)
+
 ```{r parcoords }
 library(parcoords)
 # see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
@@ -371,7 +785,7 @@ parcoords(WV.comp[, c(35, var.shortlist)],
   smoothness = 0,  # lines = 0, curves = 1
   reorderable = TRUE)
 ```
-
+## Paralel coordinates with soft lines
 
 ```{r parcoordssmooth }
 library(parcoords)
