@@ -1,0 +1,412 @@
+---
+title: "Unused yest useful graphics"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(kableExtra)
+
+```
+
+
+# Data 
+```{r}
+# example taken from https://www.data-to-viz.com/graph/sankey.html)
+# Libraries
+library(tidyverse)
+library(viridis)
+library(patchwork)
+library(hrbrthemes)
+library(circlize)
+
+# Load dataset from github
+# data <- read.table("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/13_AdjacencyDirectedWeighted.csv", header=TRUE)
+# write.table(data, file = "Data/Sankey.csv")
+
+Myflow <- read.table(file = "Data/Sankey.csv", header=TRUE)
+names(Myflow)[9] <-"Central.Asia"
+rownames(Myflow)[9] <-"Central.Asia"
+
+# Package
+library(networkD3)
+
+# I need a long format
+data_long <- Myflow %>%
+  rownames_to_column %>%
+  gather(key = 'key', value = 'value', -rowname) %>%
+  filter(value > 0)
+colnames(data_long) <- c("source", "target", "value")
+data_long$target <- paste(data_long$target, " ", sep="")
+
+
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(name=c(as.character(data_long$source), as.character(data_long$target)) %>% unique())
+ 
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+data_long$IDsource=match(data_long$source, nodes$name)-1 
+data_long$IDtarget=match(data_long$target, nodes$name)-1
+
+# Colors for regions
+RegionColors <- c("#fb8072","#8dd3c7","#80b1d3","#ffffb3","#bebada","#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd")
+
+
+```
+
+# Sankey Diagram
+```{r sankey}
+# prepare colour scale
+
+ColourScal ='d3.scaleOrdinal() .range(["#fb8072","#8dd3c7","#ffffb3","#80b1d3","#bebada","#fdb462","#b3de69","#fccde5","#d9d9d9","#bc80bd"])'
+
+
+
+# Make the Network
+sankey <- sankeyNetwork(Links = data_long, 
+                        Nodes = nodes,
+                        Source = "IDsource", 
+                        Target = "IDtarget",
+                        Value = "value", 
+                        NodeID = "name",
+                        sinksRight=FALSE, 
+                        colourScale=ColourScal,
+                        nodeWidth=40,
+                        fontSize=13, 
+                        nodePadding=20)
+sankey <- htmlwidgets::prependContent(sankey, htmltools::tags$h3("Migration Flows between 1960 and 2015"))
+sankey
+```
+
+
+# Chord diagram 
+
+```{r chord}
+#devtools::install_github("mattflor/chorddiag")
+library(chorddiag)
+
+MyMatrix <- as.matrix(Myflow)
+
+Regions <- names(Myflow)
+
+dimnames(MyMatrix) <- list(have = Regions,
+                    prefer = Regions)
+
+chord <- chorddiag(MyMatrix,
+                   showTicks = FALSE,
+                   fadeLevel = 0.3,
+                   groupnameFontsize = 14,
+                   groupColors = RegionColors,
+                   groupnamePadding = 30)
+
+chord <- htmlwidgets::prependContent(chord, htmltools::tags$h3("Migration Flows between 1960 and 2015"))
+chord
+
+```
+
+# Waterfall chart 
+
+```{r waterdata}
+# Adapted from https://www.stomperusa.com/2019/05/27/basic-waterfall-graphs-in-r/
+df <- tribble(
+    ~Category, ~Value, 
+    # --------- header record ----------
+    "2000", 2,
+    "2001", 0.1,
+    "2002", 0.175,
+    "2003", -0.2,
+    "2004", -0.1,
+    "2005", -0.2,
+    "2006", -0.1,
+    "2007", -0.175,
+    "2008", -0.5,
+    "2009", 0.2,
+    "2010", 0.3,
+    "Current", -1.5
+)
+df
+
+# Data transformation 
+levels <- df$Category
+
+data1 <- df  %>%
+    mutate(Category = factor(Category, levels = levels),
+        ymin = round(cumsum(Value), 3),
+        ymax = lag(cumsum(Value), default = 0),
+        xmin = c(head(Category, -1), NA),
+        xmax = c(tail(Category, -1), NA),
+        Evolution = ifelse(Category %in% c(as.character(df$Category[1]), as.character(df$Category[nrow(df)])),"Net value",
+                        ifelse(Value > 0, "Increase", "Decrease")
+           ))
+
+```
+
+```{r waterfall1}
+
+w <- 0.4  #use to set width of bars
+g <- ggplot(data1) +
+    geom_rect(aes(xmin = as.integer(Category) - w/2,
+                  xmax = as.integer(Category) + w/2, 
+                  ymin = ymin, ymax = ymax,
+                  fill = Evolution),  colour = "black") +
+    scale_x_discrete(limits = levels) +
+    scale_fill_manual(values = (c("Decrease" = "#525252",
+                                  "Increase" = "#cccccc",
+                                  "Net value" = "#f7f7f7"))) +
+   labs(y = "Indicator value", x = "Years",
+        title = "Waterfall chart") +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+   
+g
+
+```
+
+
+```{r waterfall2}
+
+w <- 0.4  #use to set width of bars
+g <- ggplot(data1) +
+    geom_rect(aes(xmin = as.integer(Category) - w/2,
+                  xmax = as.integer(Category) + w/2, 
+                  ymin = ymin, ymax = ymax,
+                  fill = Evolution),  colour = "black") +
+  
+   geom_rect(aes(xmin = as.integer(Category) - w/2,
+                  xmax = as.integer(Category) + w/2, 
+                 ymin = 0, ymax = ymin),  
+             colour = "black", fill= "white", alpha = 0.2) +
+    scale_x_discrete(limits = levels) +
+    scale_fill_manual(values = (c("Decrease" = "#525252",
+                                  "Increase" = "#cccccc",
+                                  "Net value" = "#f7f7f7"))) +
+   labs(y = "Indicator value", x = "Years",
+        title = "Waterfall chart - explained") +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+   
+g
+
+```
+
+
+```{r waterfall3}
+
+w <- 0.4  #use to set width of bars
+g <- ggplot(data1) +
+    geom_rect(aes(xmin = as.integer(Category) - w/2,
+                  xmax = as.integer(Category) + w/2, ymin = ymin, ymax = ymax,
+                  fill = Evolution)) +
+    scale_x_discrete(limits = levels) +
+    scale_fill_manual(values = (c("Decrease" = "#f4a582",
+                                  "Increase" = "#92c5de",
+                                  "Net value" = "grey"))) +
+   labs(y = "Indicator value", x = "Years",
+        title = "Waterfall chart ") +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+   
+g
+
+```
+
+
+# Slope Graph
+
+
+```{r}
+library(readxl)
+# ---  SDGs Data from World bank --- 
+
+# Data downloaded from  http://wdi.worldbank.org/tables
+# All countries (last access 2020-12-02)
+# NB: We needed to open the file and save tehm as Worksheet before using them...
+
+WV<- read_excel("Data/WV-Evolution_SDG_Data.xlsx", col_names = TRUE)
+Countries.data<- read.csv("Data/UNSDCountriesMethodology.csv", sep = ",")
+
+WV[,5:ncol(WV)] = sapply(WV[,5:ncol(WV)],as.numeric)
+names(WV)[1] <- "country"
+WV <- merge(WV, Countries.data, by.x = "country", by.y = "Country.or.Area", all.x = TRUE)
+
+
+# Selecting only one region of the world
+Mydata <- subset(WV, WV$Region.Name== "Asia")
+# Selecting CO2 indicator
+Mydata <-  Mydata %>%
+  filter(`Series Name`  == "CO2 emissions (metric tons per capita)"
+         )
+  
+  
+Mydata <- Mydata[, c(1,5:10)]
+
+
+names(Mydata)[2:7] <- paste0("Year",seq(from =1990, to =2015, by =5))
+
+# Long format 
+Mydata.long <- gather(Mydata,  Year, Emissions,  -country)
+Mydata.long$Emissions <- round(Mydata.long$Emissions,1)
+
+Mydata.two <- subset(Mydata.long, Year== "Year1990" | Year =="Year2010")
+Mydata.two <- Mydata.two%>% 
+  filter(complete.cases(.)) %>%
+  unique()
+  
+
+
+```
+
+
+```{r slope1 }
+# adapted from https://cran.r-project.org/web/packages/CGPfunctions/vignettes/Using-newggslopegraph.html
+
+library(CGPfunctions)
+
+newggslopegraph(Mydata.two, 
+                Year, 
+                Emissions, 
+                country, 
+                Title = "Evolution of CO2 emissions (metric tons per capita)", 
+                SubTitle = "One coloured line by country",
+                Caption = NULL,
+                LineThickness = .6,
+                YTextSize = 2 
+                #LineColor = custom_colors
+                )
+
+```
+
+
+
+```{r slope2 }
+# Computing increases and affecting colors accordingly
+custom_colors <- tidyr::pivot_wider(Mydata.two, 
+                   id_cols = country, 
+                   names_from = Year, 
+                   values_from = Emissions) %>% 
+  mutate(difference = 100*(Year2010 - Year1990)/Year1990)%>%
+  mutate(trend = case_when(
+    difference <= 0 ~ "gray",
+    (difference >= 10 & difference <= 55)  ~ "#fcae91",
+    difference >= 55 ~ "#a50f15"
+    )
+  )%>%
+  select(country, trend) %>%
+  tibble::deframe()
+
+
+p <-newggslopegraph(Mydata.two, 
+                Year, 
+                Emissions, 
+                country, 
+                Title = "Evolution of CO2 emissions (metric tons per capita)", 
+                SubTitle = "Highlighting increases",
+                Caption = NULL,
+                LineThickness = .6,
+                YTextSize = 2,
+                LineColor = custom_colors
+                )
+p
+```
+
+# Steamplot
+
+
+
+```{r StackedData}
+# create data
+set.seed(2512)
+time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=6) ) # x Axis
+value=sample( seq(0,1,0.0001) , 42)              # y Axis
+country <- paste("Country", rep(LETTERS[1:6],times=7))# group, one shape per group
+MyDataTimeSteam <- data.frame(time, value, country)
+```
+
+
+```{r StackedArea}
+# stacked area chart
+p0 <-ggplot(MyDataTimeSteam, aes(x=time, y=value, fill=country)) + 
+    geom_area(alpha=0.6 , size=.5, colour="white", ) +
+    ggtitle("Stacked Area plot ") +
+    labs(caption = "Simulated Data") +
+    xlab("Time")+
+    ylab("Population below poverty line ")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position = "bottom")
+p0
+```
+
+```{r Steamplot1}
+#devtools::install_github("hrbrmstr/streamgraph")
+library(streamgraph)
+
+p1 <- streamgraph(MyDataTimeSteam, 
+                  key="country", 
+                  value="value", 
+                  date="time",
+                  height="300px",,
+                  width="600px") %>%
+  sg_legend(show=TRUE, label="Country: ")
+p1<- htmlwidgets::prependContent(p1, htmltools::tags$h3("Steamplot (classical version"))
+p1
+
+```
+
+
+
+```{r Steamplot2}
+#devtools::install_github("hrbrmstr/streamgraph")
+library(streamgraph)
+
+p2 <- streamgraph(MyDataTimeSteam, 
+                  key="country", 
+                  value="value", 
+                  date="time",
+                  offset="expand",
+                  height="300px",order = "inside-out",
+                  width="600px", 
+                 ) %>%
+  sg_legend(show=TRUE, label="Country: ")
+p2<- htmlwidgets::prependContent(p2, htmltools::tags$h3("Steamplot (Expanded version)"))
+p2
+
+
+```
+
+

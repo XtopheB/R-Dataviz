@@ -773,6 +773,7 @@ time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=6) ) # x Axis
 value <- runif(42, 10, 30)               # y Axis
 country <- paste("Country", rep(LETTERS[1:6],times=7))# group, one shape per group
 MyDataTime <- data.frame(time, value, country)
+write.table(MyDataTime, "Data/MydataTime.csv")
 
 print(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
 
