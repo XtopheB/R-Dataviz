@@ -15,7 +15,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-# Remeber to disable png for Word export...
+# Remember to disable png for Word export...
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
                        results =FALSE, echo = FALSE,
                        dev="png", 
@@ -360,16 +360,22 @@ MyDataTimeSteam <- data.frame(time, value, country)
 ```{r StackedArea}
 # stacked area chart
 p0 <-ggplot(MyDataTimeSteam, aes(x=time, y=value, fill=country)) + 
-    geom_area(alpha=0.6 , size=.5, colour="white", ) +
+    geom_area(alpha=0.5 , 
+              size=.2, 
+              colour="white",
+              position = position_stack(reverse = TRUE)) +
     ggtitle("Stacked Area plot ") +
     labs(caption = "Simulated Data") +
     xlab("Time")+
-    ylab("Population below poverty line ")+
+    ylab("")+
     theme_minimal() +
   theme(
   plot.caption = element_text(color = "grey", face = "italic"), 
   legend.position = "bottom")
+
 p0
+#Interactive version
+ ggplotly(p0)
 ```
 
 ```{r Steamplot1}
@@ -381,7 +387,7 @@ p1 <- streamgraph(MyDataTimeSteam,
                   value="value", 
                   date="time",
                   height="300px",,
-                  width="600px") %>%
+                  width="1000px") %>%
   sg_legend(show=TRUE, label="Country: ")
 p1<- htmlwidgets::prependContent(p1, htmltools::tags$h3("Steamplot (classical version"))
 p1

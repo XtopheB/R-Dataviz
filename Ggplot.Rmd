@@ -1,0 +1,335 @@
+---
+title: "An introduction to ggplot2"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(kableExtra)
+
+```
+
+## Data sets {-}
+
+```{r SDGMaternal}
+Mydata <- read.table(file ="Data/DG-Example-M4.csv")
+
+Maternal.label <- "Maternal Mortality Indic. (3.1.1)"
+Poverty.label <- "Poverty Indic. (1.1.1)"
+
+
+```
+
+# Visualizing two  variables 
+```{r Scatter}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple Scatter plot")
+```
+
+
+> The goal is to **visualize relationships**
+## Scatter plot 
+
+
+```{r}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, colour =  as.factor(Age))) +
+  geom_point() +
+  facet_wrap(~as.factor(TimePeriod))
+```
+
+
+
+
+
+
+
+
+
+
+```{r Scatter}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color, , alpha = 0.99) +
+  ggtitle("Simple Scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+
+
+```{r Scatteralpha}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color, alpha = 0.4) +
+  ggtitle("Simple Scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+```{r Scatterrug}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  geom_rug(color = SIAP.color)+
+  ggtitle("Scatter plot with rug") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+
+```{r Scatterhisto}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with histograms") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "histogram", fill=SIAP.color)
+
+```
+
+
+
+```{r Scatterbox}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with boxplot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "boxplot", fill=SIAP.color, alpha =0.5,
+                    outlier.colour = SIAP.color, outlier.alpha = 0.3)
+
+```
+
+
+```{r Scatterdensity}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with boxplot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "density", fill=SIAP.color, alpha =0.5)
+
+```
+
+
+
+## Bubble chart
+
+```{r Bubble}
+library(stringr)
+
+p<-ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Age)) +
+  geom_point(color = SIAP.color, alpha = 0.5) +
+  ggtitle("Bubble plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+  xlim(0,80)+
+   ylim(0,800)+
+  theme_minimal() +
+  theme(legend.position="bottom" )
+
+```
+```{r}
+ggplotly(p)
+```
+
+
+
+## Visualiszing over time and categories 
+
+```{r datatime}
+# create data
+set.seed(2512)
+time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=6) ) # x Axis
+value <- runif(42, 10, 30)               # y Axis
+country <- paste("Country", rep(LETTERS[1:6],times=7))# group, one shape per group
+MyDataTime <- data.frame(time, value, country)
+write.table(MyDataTime, "Data/MydataTime.csv")
+
+print(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
+
+#library(xtable)
+
+#xtable(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
+```
+
+
+```{r Spaghetti}
+# Spaghetti plot
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    ggtitle("Spaghetti plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"))
+```
+
+
+```{r Spaghetti2}
+# Spaghetti plot
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    ggtitle("Spaghetti plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"),
+  legend.position="none")
+```
+
+
+```{r SpagettiGrey}
+
+MyDataTime$country2 <- MyDataTime$country
+
+ggplot(MyDataTime, aes(x=time, y=value, group=country)) +
+    geom_line(color="grey") +
+    geom_line(data = subset(MyDataTime, country == "Country A"),
+              aes(color = SIAP.color)) +
+    ggtitle("Spaghetti plot with one country highlighted ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none",
+  panel.grid = element_blank()
+  )
+
+```
+
+
+## Small multiples 
+
+```{r LineFacet}
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    facet_wrap(~country)+
+    ggtitle("Multiple line plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none")
+
+```
+
+```{r LineFacetGrey}
+
+MyDataTime$country2 <- MyDataTime$country
+
+ggplot(MyDataTime, aes(x=time, y=value)) + 
+    geom_line(data = MyDataTime %>% dplyr::select(-country),
+              aes(group=country2), 
+              color="grey", size=0.5, alpha=0.7) +
+    geom_line( aes(color=name), color=SIAP.color, size=1.2 )+
+    facet_wrap(~country)+
+    ggtitle("Multiple line plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none",
+  panel.grid = element_blank()
+  )
+
+```
+
+## Multiple area plot 
+
+```{r AreaFacet}
+ggplot(MyDataTime, aes(x=time, y=value, group=country, fill = country)) + 
+    geom_area(alpha = 0.8) +
+    facet_wrap(~country)+
+    ggtitle("Multiple area plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none")
+
+```
+
+## Stacked area chart
+
+> These charts are for specific data types 
+
+```{r StackedArea}
+
+
+# stacked area chart
+ggplot(MyDataTime, aes(x=time, y=value, fill=country)) + 
+    geom_area(alpha=0.6 , size=.5, colour="white") +
+    ggtitle("Stacked Area plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylab("Population below poverty line ")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position = "bottom")
+```
+
