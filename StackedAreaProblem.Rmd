@@ -1,0 +1,330 @@
+---
+title: "The problem with stacked area charts"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       fig.width=7, fig.height=4, 
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+# Palette 
+library(wesanderson)
+```
+
+```{r libraries}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(kableExtra)
+# Additionnal 
+#devtools::install_github("wilkelab/ungeviz")
+library(ungeviz)
+
+```
+
+# The stacked area chart problem^[This example is inspired from [a post by Dr Drang](https://leancrew.com/all-this/2011/11/i-hate-stacked-area-charts/) and uses [some code from Yan Holtz](https://www.data-to-viz.com/caveat/stacking.html)].
+
+
+We have observed (or computed) the shares of one quantitative indicator (*e.g.* population,  wealth, production,...) in 3 regions (named here A, B and C) for 6 years, from 2000 to 2006. 
+
+The data set is the following: 
+
+```{r dataset, echo = FALSE, results=TRUE}
+# create dummy data
+MyData <- data.frame(
+  Region = rep(c("Region A", "Region B", "Region C"), each=6),
+  Year = rep(seq(2000,2005), 3),
+  Share = c(  75, 73, 68, 57, 36, 0, 15, 16, 17, 18, 19, 20, 10, 11, 15, 25, 45, 80)
+)
+## Table
+
+MyDataLarge <-  spread(MyData, key = "Year", value = "Share", fill = 0)
+t <-  kbl(MyDataLarge)
+
+kable_styling(t,full_width = F )
+
+```
+## What are the legitimate questions?  
+
+Since the data is about shares for different regions over time, there should be questions about at least two types of comparisons:
+
+- Comparisons of regions shares for a particular year
+- Comparisons of shares for one region over time
+
+But we may ask for more interesting features of this very simple data set and ask for a composite question on the comparison of the evolution of these market shares over time. We may also want to see the maximums and minimums, and gains or losses of market shares over time. 
+These are some ex-ante questions but a first visualization is needed before being able to refine the flow of questions that will come out of our first graphic.  
+
+## Visualizing the evolution {-}
+
+One goal is to visualize the shares over time for each region and to compare the evolution. Since the data are shares, the total of the shares for the three regions A, B and C is always  equal to 100. 
+
+A first, natural idea could be to draw a *stacked area chart*, like this one. 
+
+```{r StackedArea}
+#plot
+MyData %>% 
+  ggplot( aes(x=Year, y=Share, fill=Region)) +
+    geom_area( ) +
+    scale_fill_manual(values = wes_palette("Royal1"))+
+  ggtitle(" Shares for different regions over time [2000-2006]")+
+     geom_text(data = MyData %>% 
+              filter(Year == 2002)%>%
+              mutate(value = cumsum(rev(Share))), 
+            aes(label = rev(Region), 
+                x = Year , 
+                y = value - 8), 
+                color = wes_palette("Royal2")[3], size =6) + 
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+# Fundamental Problem: Are the shares of the region B increasing over time? {-}
+
+This is quite a tricky question because our eyes are not good at comparing vertically when the overall shape of the graphic has an increasing pattern. Moreover, there is no element in the graphic to help us perform a strictly vertical comparison. 
+
+So, even if the design of this graphic is appealing, we can notice several problems: 
+
+ - While it is straightforward to see that the shares of region C are sharply increasing over time, it is very difficult to assess the trend for those of the region B, represented here in red. 
+ 
+> **Are the share for region B increasing or decreasing?** 
+ 
+ - We represent here time as if it was a continuous variable, but we know we only observe 6 values for each region.
+ 
+> **Will the reader notice that we only have observations for 6 points in time?** 
+
+ - The values of the shares for each region are not easy to compute.
+ 
+ > **How could the reader compare each share or estimate their values?** 
+
+# Some solutions {-}
+
+Hopefully, one may solve these problems and provide graphics that can answer legitimate questions. We will use some of the visualization techniques and change the way we can represent these data. 
+
+## Could we use another type of graphic? 
+
+The first idea could be to do the simplest graphic possible with such data, and use a *line plot* with  lines representing the shares for each region.^[For coherency, we keep the same colors all over the exercise. The colors could be chosen to be more meaningful for representing the 3 regions.]  
+
+
+```{r LinePlot}
+
+ ggplot( MyData,aes(x=Year, y=Share, fill=Region)) +
+    geom_line(aes(colour = Region), size = 2) +
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    geom_text(data = MyData %>% 
+              filter(Year == 2005)%>%
+              mutate(value = Share), 
+            aes(label = rev(Region), 
+                x = Year +0.5 , 
+                y = value, color = Region),
+            size =4) + 
+    scale_color_manual(values = wes_palette("Royal1")) +
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+The first advantage of this graphic is that it clearly shows that the share of region B is increasing, something that was hard to spot. The crossing of the lines is also  a new features and an indication that the leadership has changed between region C, leader since 2003, and region A taking the lead starting from 2004. 
+
+We may also emphasize the fact that we only observed data for 6 years using a *connected scatter plot*. 
+
+```{r Connected}
+
+ ggplot( MyData,aes(x=Year, y=Share, fill=Region)) +
+    geom_line(aes(colour = Region), size = 2) +
+    geom_point(aes(colour = Region), size = 3) +
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    geom_text(data = MyData %>% 
+              filter(Year == 2005)%>%
+              mutate(value = Share), 
+            aes(label = rev(Region), 
+                x = Year +0.5 , 
+                y = value, color = Region),
+            size =4) + 
+    scale_color_manual(values = wes_palette("Royal1")) +
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+Since lines always induce some kind of link from one point to another, we may want to customize this plot to emphasize the fact that we basically observed 6 points for each region. We then  connect the yearly observations to help visualize a trend.  This what is done in this  *horizontal segments connected plot* (or *pline*) where horizontal lines are plotted instead of points. To decrease the visual impact of the lines, we plot them with some *transparency*.  
+
+
+```{r Pline}
+
+ ggplot( MyData,aes(x=Year, y=Share, fill=Region)) +
+    geom_line(aes(colour = Region), size = 1.5, alpha = 0.5) +
+    geom_hpline(aes(colour = Region), size = 1.2,stat = "summary") +
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    geom_text(data = MyData %>% 
+              filter(Year == 2005)%>%
+              mutate(value = Share), 
+            aes(label = rev(Region), 
+                x = Year +0.7 , 
+                y = value, color = Region),
+            size =4) + 
+    scale_color_manual(values = wes_palette("Royal1")) +
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+## There are other options...
+
+One of the options would be to keep the idea of *area chart* but using a *small multiple* approach and draw one surface for each region. This approach solves many problems at once:
+
+- The evolution of each share is clear, including for the region B where the increase is clear
+- The values of each shares can be compared, thanks to a *common scale*
+
+
+```{r StackedMultiple}
+
+ ggplot( MyData,aes(x=Year, y=Share, fill=Region)) +
+    geom_area(aes(colour = Region), colour = "grey", size =1, alpha = 0.8) +
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    facet_wrap(vars(Region), nrow = 2)+
+    scale_fill_manual(values = wes_palette("Royal1"))+
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+## What about stacked bars?
+
+ Since our data set is composed of the observation of 3 market shares, one option could be to plot stacked bars for each year. The result may seem very similar to the initial stacked area plot, but, it has the virtue of showing clearly the discrete nature of the observation year by year. Moreover, by spiting the graphic into 6 separate ones, each with a clear vertical border, it may be easier to compare the slices for region B and their evolution over time. 
+
+
+```{r StackedBars}
+
+ g <-  ggplot( MyData, aes(x=Year, y=Share, fill=Region)) +
+    geom_bar(stat = "identity", aes(colour = Region), 
+             colour = "grey", size =1, alpha = 0.8) +
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    geom_text(data = MyData %>% 
+              filter(Year == 2000)%>%
+              mutate(value = cumsum(rev(Share))), 
+            aes(label = rev(Region), 
+                x = Year , 
+                y = value - 5), 
+                color = wes_palette("Royal2")[3], size =4) + 
+    scale_fill_manual(values = wes_palette("Royal1"))+
+    theme_tufte() +
+    theme(legend.position="none")
+g
+```
+
+This new design does not really help comparing the yearly variation of region B shares, because there is no *common baseline* for comparison. To increase the comparability, we have to remember that the order in which the areas are set is arbitrary (alphabetic) and therefore neither data- nor human-based, but software-based!  
+
+This is one of the most important degree of freedom in any graphic:  We often have the ability to *reorder* the classes of discrete element to have a more meaningful or clearer view of the data. 
+The following graphic illustrate that point: 
+
+```{r OrderedStakedBars}
+# Reordering the data
+  MyData$Region2 <- reorder(MyData$Region, -MyData$Share)
+
+# Need to gather the colors used for consitency
+Plot.colors <- unique(ggplot_build(g)$data[[1]]$fill)
+
+
+  ggplot( MyData, aes(x=Year, y=Share, fill=Region2)) +
+      geom_bar(stat = "identity", aes(colour = Region2), 
+             colour = "grey", size =1, alpha = 0.8) +
+      ggtitle(" Shares for different regions over time [2000-2006]")+
+      geom_text(data = MyData %>% 
+              filter(Year == 2000)%>%
+              mutate(value = cumsum(rev(Share))), 
+            aes(label = c("Region B", "Region C", " Region A"), 
+                x = Year , 
+                y = value - 5), 
+                color = wes_palette("Royal2")[3], size =4) + 
+    scale_fill_manual(values = c(Plot.colors[1],
+                                 Plot.colors[3],
+                                 Plot.colors[2]))+
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
+
+# So what? {-}
+ 
+We have used different type of graphics (*stacked areas*, *lines*, *stacked bars*, ..) and applied several techniques used in data visualization (*small multiples*, *common axis*, *reordering*, *vertical references*). We have tried to find the best graphic for answering our legitimate questions, but there is no clear-cut answer to all the questions.
+
+At least, we now know **which graphics are not well designed** and which are **providing immediate answers**. We also have emphasized the fact that, depending on the data themselves, on the relative values present in the data set,  one type of graphic may be better suited for presenting facts and answering legitimate questions.
+
+The freedom we have is to play with different types of graphics, to observe the data and their features before reordering and selecting the visual form that will be the easiest or the most interesting for the targeted audience.
+
+We should be suspicious on any arbitrary or software-driven choices and use that freedom in any of our graphics. And finally, the initial *stacked area chart* with a clever order of the areas and some annotations may not be a bad solution!
+
+$$\\[0.5in]$$
+
+
+
+
+
+
+```{r OrderedStakedArea}
+# Reordering the data
+  MyData$Region2 <- reorder(MyData$Region, -MyData$Share)
+
+# Need to gather the colors used for consitency
+Plot.colors <- unique(ggplot_build(g)$data[[1]]$fill)
+
+
+p<-  ggplot( MyData, aes(x=Year, y=Share, fill=Region2)) +
+      geom_area(aes(colour = Region2), 
+             colour = "white", size =1.5, alpha = 0.8) +
+      ggtitle(" Shares for different regions over time [2000-2006]")+
+      geom_text(data = MyData %>% 
+              filter(Year == 2000)%>%
+              mutate(value = cumsum(rev(Share))), 
+            aes(label = c("Region B", "Region C", " Region A"), 
+                x = Year + 0.5, 
+                y = value - 3), 
+                color = wes_palette("Royal2")[3], size =4) + 
+    scale_fill_manual(values = c(Plot.colors[1],
+                                 Plot.colors[3],
+                                 Plot.colors[2]))+
+    theme_tufte() +
+    theme(legend.position="none")
+
+p + annotate("rect", xmin = 2003.5, xmax = 2003.8, 
+             ymin = subset(MyData, Year ==2003 & Region == "Region B")$Share,
+             ymax = 100,
+             fill = "white", alpha = .3) +
+  annotate("text", x = 2002.8, y = 70, 
+           label = paste0("Shares of region A >\n shares of region C    "), 
+           color = "white", size = 4)+
+  annotate("text", x = 2004.4, y =45, 
+           label = paste0("Shares of region C >\n shares of region A    "), 
+           color = "grey", size = 4)
+```
+
+
+
+```{r}
+knitr::knit_exit()
+```
+

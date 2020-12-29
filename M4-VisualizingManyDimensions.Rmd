@@ -111,6 +111,9 @@ WV[,2:ncol(WV)] = sapply(WV[,2:ncol(WV)],as.numeric)
 
 #Joining with regional attributes of countries
 WV <- merge(WV, Countries.data, by.x = "country", by.y = "Country.or.Area", all.x = TRUE)
+
+write.table(WV, file ="Data/M4-Economy-Data.csv")
+
 ```
 
 ```{r}
