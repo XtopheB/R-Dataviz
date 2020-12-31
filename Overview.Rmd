@@ -711,11 +711,12 @@ ggplot(SDGMatPov, aes(x=Poverty, y= Maternal)) +
 
 ```
 
-## Visualazing over time
+## Visulazing over time
 
 > The goal is to see an evolution....
 
-```{r, results= "asis"}
+```{r, echo=FALSE, results=TRUE}
+# for LaTeX et xtable  use {r,  results= "asis"}
 SDGMatPov.Time <- SDGMatPov %>%
   filter(GeoAreaName=="Brazil") %>%
   group_by(TimePeriod) %>%
@@ -723,9 +724,14 @@ SDGMatPov.Time <- SDGMatPov %>%
     MatYear = mean(Maternal),
     PovYear = mean(Poverty)
   )
-print(SDGMatPov.Time)
-# library(xtable)
+# print(SDGMatPov.Time)
+#library(xtable)
 # xtable(SDGMatPov.Time)
+
+t <-  kbl(SDGMatPov.Time, digits = 1)
+
+kable_styling(t,full_width = F)
+
 ```
 
 
@@ -780,6 +786,16 @@ print(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
 #library(xtable)
 
 #xtable(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
+```
+
+We can also display the values over time... 
+
+```{r, echo=FALSE, results= TRUE}
+MyDataLarge <-  spread(MyDataTime, key = "time", value = "value", fill = 0)
+t <-  kbl(MyDataLarge, digits = 1, 
+          caption = " Poverty rate indicator (1.1.1) for several countries, over 6 years")
+
+kable_styling(t,full_width = F)
 ```
 
 
