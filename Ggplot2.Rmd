@@ -1,0 +1,647 @@
+---
+title: "An introduction to ggplot2"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+  html_notebook: default
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries}
+library(readxl)
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+library(ggplot2)
+library(forcats)
+library(knitr)
+library(kableExtra)
+
+```
+
+## Data sets {-}
+
+We use data extracted from  https://unstats.un.org/SDGS/Indicators/Database/?area=TTO. We merged by country two indicators: 
+* Poverty index  (Indicator 1.1.1)  "*Proportion of population below poverty line*"
+* Maternal mortality ratio (Indicator 3.1.1) "*Maternal mortality ratio (per_100000 live Birth*"
+
+We selected only countries with letters A-C to avoid unnecessary heavy file.  
+
+```{r SDGData}
+Mydata <- read.table(file ="Data/DG-Example-M4.csv")
+WV<-  read.table(file ="Data/M4-Economy-Data.csv")
+
+# Temp <- WV %>%
+#   select(country, Population.millions2019)
+
+Mydata <- merge(Mydata, select(WV,country, Population.millions2019) , by.x = "GeoAreaName", by.y = "country")
+
+Maternal.label <- "Maternal Mortality Indic. (3.1.1)"
+Poverty.label <- "Poverty Indic. (1.1.1)"
+
+
+# Cleaning
+Mydata <- Mydata %>%
+  mutate(
+   Period = case_when(
+        (TimePeriod <= 2004)  ~ "2000-2004",
+        (TimePeriod > 2004)&(TimePeriod <= 2008)~ "2005-2008",
+        (TimePeriod > 2008)&(TimePeriod <= 2012) ~  "2009-2012" ,
+         (TimePeriod > 2012) ~  "2013-2017" ), 
+   Age = as.factor(Age),
+   Population = Population.millions2019, 
+   Country = GeoAreaName
+  ) %>%
+  select(
+    Poverty, Maternal, Population, Age, Country, Period
+  )
+  
+  
+```
+
+#First plot
+
+## Scatter plot
+
+```{r Scatter00}
+ggplot(Mydata)
+```
+
+```{r Scatter0}
+ggplot(Mydata) +
+aes(x=Poverty, y= Maternal)
+```
+
+
+
+```{r Scatter}
+ggplot(Mydata) +
+aes(x=Poverty, y= Maternal) +
+geom_point() 
+```
+
+```{r Scatter2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot")
+```
+
+## Adding other aesthetic components
+
+
+```{r Scatter3}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, colour = Country)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with colored encoding 'countries'")
+```
+
+
+
+```{r Scatter4}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, shape = Age)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with shapes encoding 'Age'")
+```
+
+
+
+```{r Scatter5}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Population)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with size encoding 'population'")
+```
+
+
+
+```{r Scatter6}
+ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Population, colour = Country, shape = Age)) +
+  geom_point() +
+  ggtitle("Simple scatter plot combining the features")
+```
+
+
+## Line plot
+```{r line}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_line() +
+  ggtitle("Simple line plot")
+```
+
+
+```{r pointline}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_line() +
+  geom_point()+
+  ggtitle("Simple line plot with points")
+```
+
+
+## Box and Whiskers
+
+```{r boxplot}
+ggplot(Mydata, aes(x=Poverty)) +
+  geom_boxplot() +
+  ggtitle("Simple box plot")
+```
+
+## Jitter
+
+Here we need to add a "fake" vertical dimension 
+
+```{r jitter}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+  geom_jitter() +
+  ggtitle("Jitter points")
+```
+## Combining (careful of layer order)
+
+```{r Boxjitter}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+   geom_jitter() +
+   geom_boxplot() +
+  ggtitle("Boxplot and jitter")
+```
+
+```{r Boxjitter2}
+ggplot(Mydata, aes(x=Poverty, y ="")) +
+  geom_boxplot() +
+  geom_jitter() +
+  ggtitle("Boxplot and jitter")
+```
+
+
+#  Faceting
+
+
+```{r scatterfacet}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  facet_wrap(~Period)+
+  ggtitle("Faceted graphics ")
+```
+
+
+# Working with aesthetics
+
+### Here we **set** a colour to an aesthetic (points)
+
+```{r aes1 }
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = "blue") +
+  ggtitle("Simple scatter plot with blue points")
+```
+
+### Here we **map** a colour to a variable in the aesthetic (points)
+
+
+```{r aes2}
+ ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+   geom_point(aes(color = "Blue")) +
+   ggtitle("Simple scatter plot with ... red points?")
+```
+The color is red because the variable **mapped** has only one value ("Blue") and assign this value with the first color in the default palette. So the constant value "blue" is mapped with the color red, as indicated in the legend. The legend appears because we **mapped** a color to a variable.   
+
+
+### Here we **map** a colour to a properly defined variable for an aesthetic (points)
+
+```{r aes3}
+
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(aes(color = Age)) +
+  ggtitle("Simple scatter plot with color mapped with Age")
+
+
+```
+
+
+# Don't be fooled by axis range
+
+```{r Zoom1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot with default axis")
+```
+
+# Zooming can be dangerous 
+
+## 
+
+
+```{r Zoom2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ylim(0, 600)+
+  ggtitle("Simple scatter plot with customized X axis zoomed ")
+```
+
+
+
+There seems to be no difference... 
+
+
+## Highlighting the difference
+
+##  original graphic with 
+```{r Zoom3}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  #geom_hline(yintercept = 600, colour = "red") +
+  ggtitle("Simple scatter plot with regression line ")
+```
+
+
+## When zoomed in, the points are removed from the graphic and *virtually* from the data set!!
+
+```{r zoom4}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  ylim(c(0, 600)) +
+  geom_smooth(method = "lm")+
+  ggtitle("Simple scatter plot with customized X axis using xlim()")
+```
+
+```{r zoom5}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  scale_y_continuous(limits =c(0, 600))+
+  geom_smooth(method = "lm") +
+  ggtitle("Simple scatter plot with customized X axis using scale_y_continuous()")
+```
+
+## How to properly zoom?  Use *coord_cartesian()*
+
+
+```{r zoom6}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_hline(yintercept = 600, colour = "red") +
+  coord_cartesian(ylim =c(0, 600))+
+  geom_smooth(method = "lm") +
+  ggtitle("Simple scatter plot with customized X axis using coord_cartesian()")
+```
+
+```{r zoom8}
+
+fit1 <- lm(Maternal ~ Poverty, data = Mydata)
+
+predicted_df <- data.frame(Maternal_pred = predict(fit1, Mydata), Poverty = Mydata$Poverty)
+
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+ ylim(c(0, 600)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_line(data = predicted_df, aes(x = Poverty , y =Maternal_pred),
+            colour = "darkorange2", size  = 1.5) +
+  
+  ggtitle("Comparing the regressions with different zooms in the plat")
+```
+
+## the same applies to *facets*
+
+```{r zoom7}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~Period)+
+  ggtitle("Faceted graphics with nonparametric regressions")
+```
+
+
+
+# Beautiful graphics
+
+
+# Labels
+
+
+```{r labels1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  labs( x=  "Poverty Indic. (1.1.1)", 
+        y = "Maternal Mortality Indic. (3.1.1)") +
+  ggtitle("Simple scatter plot a nice theme")
+
+
+```
+
+
+
+##  Choosing the right theme
+
+```{r theme1}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot a nice theme") +
+   theme_bw()
+  # theme_base()
+  # theme_minimal()
+  # theme_tufte()
+
+```
+
+## Customizing the theme
+
+```{r theme2}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point() +
+  ggtitle("Simple scatter plot a nice theme") +
+  theme_minimal()
+
+```
+
+
+
+
+
+```{r}
+knitr::knit_exit()
+```
+
+
+
+
+
+
+
+
+
+
+```{r Scatterblue}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color, , alpha = 0.99) +
+  ggtitle("Simple scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+
+
+```{r Scatteralpha}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color, alpha = 0.4) +
+  ggtitle("Simple scatter plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+```{r Scatterrug}
+ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  geom_rug(color = SIAP.color)+
+  ggtitle("Scatter plot with rug") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+```
+
+
+```{r Scatterhisto}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with histograms") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "histogram", fill=SIAP.color)
+
+```
+
+
+
+```{r Scatterbox}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with boxplot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "boxplot", fill=SIAP.color, alpha =0.5,
+                    outlier.colour = SIAP.color, outlier.alpha = 0.3)
+
+```
+
+
+```{r Scatterdensity}
+library(ggExtra)
+p <- ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
+  geom_point(color = SIAP.color) +
+  ggtitle("Scatter plot with boxplot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+       theme_minimal()
+
+ggExtra::ggMarginal(p, type = "density", fill=SIAP.color, alpha =0.5)
+
+```
+
+
+
+## Bubble chart
+
+```{r Bubble}
+library(stringr)
+
+p<-ggplot(Mydata, aes(x=Poverty, y= Maternal, size = Age)) +
+  geom_point(color = SIAP.color, alpha = 0.5) +
+  ggtitle("Bubble plot") +
+  xlab(Poverty.label)+
+  ylab(Maternal.label)+
+  xlim(0,80)+
+   ylim(0,800)+
+  theme_minimal() +
+  theme(legend.position="bottom" )
+
+```
+```{r}
+ggplotly(p)
+```
+
+
+
+## Visualizing over time and categories 
+
+```{r datatime}
+# create data
+set.seed(2512)
+time <- as.numeric(rep(seq(from = 2000,to = 2006, by=1), each=6) ) # x Axis
+value <- runif(42, 10, 30)               # y Axis
+country <- paste("Country", rep(LETTERS[1:6],times=7))# group, one shape per group
+MyDataTime <- data.frame(time, value, country)
+write.table(MyDataTime, "Data/MydataTime.csv")
+
+print(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
+
+#library(xtable)
+
+#xtable(MyDataTime %>% arrange(country,time)  %>% relocate(country, time))
+```
+
+
+```{r Spaghetti}
+# Spaghetti plot
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    ggtitle("Spaghetti plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"))
+```
+
+
+```{r Spaghetti2}
+# Spaghetti plot
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    ggtitle("Spaghetti plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"),
+  legend.position="none")
+```
+
+
+```{r SpagettiGrey}
+
+MyDataTime$country2 <- MyDataTime$country
+
+ggplot(MyDataTime, aes(x=time, y=value, group=country)) +
+    geom_line(color="grey") +
+    geom_line(data = subset(MyDataTime, country == "Country A"),
+              aes(color = SIAP.color)) +
+    ggtitle("Spaghetti plot with one country highlighted ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 40)) +
+    ylab("Population below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none",
+  panel.grid = element_blank()
+  )
+
+```
+
+
+## Small multiples 
+
+```{r LineFacet}
+ggplot(MyDataTime, aes(x=time, y=value, group=country, color = country)) + 
+    geom_line() +
+    facet_wrap(~country)+
+    ggtitle("Multiple line plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none")
+
+```
+
+```{r LineFacetGrey}
+
+MyDataTime$country2 <- MyDataTime$country
+
+ggplot(MyDataTime, aes(x=time, y=value)) + 
+    geom_line(data = MyDataTime %>% dplyr::select(-country),
+              aes(group=country2), 
+              color="grey", size=0.5, alpha=0.7) +
+    geom_line( aes(color=name), color=SIAP.color, size=1.2 )+
+    facet_wrap(~country)+
+    ggtitle("Multiple line plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none",
+  panel.grid = element_blank()
+  )
+
+```
+
+## Multiple area plot 
+
+```{r AreaFacet}
+ggplot(MyDataTime, aes(x=time, y=value, group=country, fill = country)) + 
+    geom_area(alpha = 0.8) +
+    facet_wrap(~country)+
+    ggtitle("Multiple area plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylim(c(0, 50)) +
+    ylab("Pop. below poverty line (millions)")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position="none")
+
+```
+
+## Stacked area chart
+
+> These charts are for specific data types 
+
+```{r StackedArea}
+
+
+# stacked area chart
+ggplot(MyDataTime, aes(x=time, y=value, fill=country)) + 
+    geom_area(alpha=0.6 , size=.5, colour="white") +
+    ggtitle("Stacked Area plot ") +
+    labs(caption = "Generated Data") +
+    xlab("Time")+
+    ylab("Population below poverty line ")+
+    theme_minimal() +
+  theme(
+  plot.caption = element_text(color = "grey", face = "italic"), 
+  legend.position = "bottom")
+```
+
