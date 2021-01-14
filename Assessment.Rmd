@@ -3,14 +3,14 @@ title: "Data-based assessment"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  pdf_document:
+    keep_tex: yes
+  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
-  html_notebook: default
-  pdf_document:
-    keep_tex: yes
   word_document: default
 ---
 
@@ -133,13 +133,14 @@ SDGdata6 <- SDG6 %>%
 SDG11<- readxl::read_xlsx("RawData/Goal11.xlsx", 
                              col_names = TRUE, sheet = "data")
 lab11 <- "Deaths due to disasters"
-unit11 <- "(Nb.  of deaths)"
+unit11 <- "(per 100.000 pop)"
 
 # /!\ there are units in the downloaded raw data set!
 SDGdata11 <- SDG11 %>% 
    filter(
     Indicator == "11.5.1" , 
-    Units =="NUMBER"
+    #Units =="NUMBER"
+    Units == "PER_100000_POP"
   ) %>%
   mutate(
     Disaster = as.numeric(Value)
@@ -336,9 +337,23 @@ SDGMM %>% filter(!is.na(Region))%>%
  
 
 ```{r Density }
-ggplot(data= SDGMM) +
+SDGMM %>% filter(!is.na(Region))%>%
+ ggplot() +
  aes(x = MortalityRate) +
-    geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+    geom_density(adjust = 0.9, fill=SIAP.color,color=SIAP.color, alpha=0.2) +
+   ggtitle("Density estimate")+ 
+  xlab(lab3)+
+ theme_tufte()
+
+```
+
+
+```{r DensityMulti }
+SDGMM %>% filter(!is.na(Region))%>%
+ ggplot() +
+ aes(x = MortalityRate, group=Region, fill=Region, color = Region) +
+    geom_density( adjust=2, alpha=0.2) +
+  # geom_density( fill=SIAP.color,color=SIAP.color, alpha=0.2) +
    ggtitle("Density estimate")+ 
   xlab(lab3)+
  theme_tufte()
@@ -386,14 +401,31 @@ ggplot(data= SDGMM) +
 From [OpEx](https://lsc.deployopex.com/box-plot-with-jmp/)
 
 ```{r Boxplot}
-ggplot(data= SDGMM) +
+SDGMM %>% filter(!is.na(Region))%>%
+ ggplot() +
  aes(x = MortalityRate, y= "") +
-    geom_boxplot(width=0.3 ,fill=SIAP.color,color=SIAP.color,  alpha=0.2) +
+  geom_boxplot(width=0.3 ,fill=SIAP.color,color=SIAP.color,  alpha=0.2) +
   ggtitle("Boxplot (Box-and-Whiskers)")+ 
   xlab(lab3)+
  theme_minimal()+
   theme(panel.grid.major = element_blank(),
   panel.grid.minor = element_blank())
+```
+
+## Much better if decomposed by Regions of the world
+
+```{r BoxplotFacet}
+SDGMM %>% filter(!is.na(Region))%>%
+ ggplot() +
+ aes(x = MortalityRate, y= "", fill = Region) +
+  geom_boxplot(width=0.3 ,  alpha=0.2) +
+  ggtitle("Boxplot (Box-and-Whiskers)")+ 
+  facet_wrap(~factor(Region, levels=c("Africa", "Asia", "Oceania", "Americas" )), ncol =1) +
+  xlab(lab3)+
+ theme_minimal()+
+  theme(panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(), 
+  legend.position = "none")
 ```
 
 
@@ -439,8 +471,7 @@ kable_styling(t,full_width = F)
 ```
 
 
-# Part II
-Working with both categorical and continuous data
+# Part 2: Working with both categorical and continuous data
 
 ```{r CatData}
 SDGAgg <- SDGFull %>%
@@ -474,7 +505,7 @@ SDGAgg <- SDGAgg %>%
 ```
 
 
-```{r DataPart2, eval=FALSE, include=FALSE}
+```{r DataPart2}
 ## data saved for part2
 SDGAgg %>%
   filter(!is.na(Region))%>%
@@ -497,18 +528,21 @@ SDGAgg %>%
 
 ```
 
-### Stacked bars
+### Stacked bars (bad idea)
 
 ```{r StackedBar}
 SDGAgg%>%
    filter(
    !is.na(Region), 
    !is.na(GHG_class)) %>%
+  mutate(
+    Region = factor(Region, levels= c("Asia", "Africa", "Americas", "Oceania", "Europe"))
+  )%>%
  ggplot() +
  aes(x = GHG_class ,fill = Region, weight = Disaster) +
  geom_bar() +
- scale_fill_hue() +
-labs( title= "Deaths due to disasters by region and by countries GHG emission classes" ) +
+ scale_fill_manual(values=c("#00BF7D", "#F8766D", "#A3A500",  "#E76BF3" ,"#00B0F6" )) +
+ labs( title= "Deaths due to disasters by region and by countries GHG emission classes" ) +
  xlab(paste("Countries GHG classes"))+
  ylab(paste(lab11, unit11))+
  theme_tufte() +
@@ -522,11 +556,14 @@ SDGAgg%>%
    filter(
    !is.na(Region), 
    !is.na(GHG_class)) %>%
+  mutate(
+    Region = factor(Region, levels=c( "Asia", "Africa", "Americas", "Oceania", "Europe"))
+  )%>%
  ggplot() +
  aes(x = GHG_class ,fill = Region, weight = Disaster) +
-  geom_bar(position = "dodge") +
- scale_fill_hue() +
-labs( title= "Deaths due to disasters by region and by countries GHG emissions classes" ) +
+ geom_bar(position = "dodge", aes(fill= Region)) +
+ scale_fill_manual(values=c("#00BF7D", "#F8766D", "#A3A500",  "#E76BF3" ,"#00B0F6" )) +
+labs( title= "Deaths due to disasters by region and by GHG emissions countries" ) +
  xlab(paste("Countries GHG classes"))+
  ylab(paste(lab11, unit11))+
  theme_tufte() +
@@ -544,7 +581,8 @@ SDGAgg%>%
  ggplot() +
  aes(x = GHG_class , fill = Region, weight = Disaster) +
   geom_bar(position = "dodge") +
-  facet_wrap(~Region, switch = "x") +
+  facet_wrap(~factor(Region, levels=c( "Asia", "Africa", "Americas", "Oceania", "Europe"))
+                     , switch = "x") +    
  scale_fill_hue() +
 labs( title= "Deaths due to disasters by region and by countries GHG emissions classes" ) +
  xlab(paste("Countries GHG classes"))+
@@ -607,21 +645,24 @@ SDGExportPart3 <- SDGFull %>%
   ) %>%
   select(-Poverty, -Water, -Disaster, -GHG) %>%
   filter(Region == "Africa" | Region == "Asia" | Region == "Americas" ) %>%
-  arrange(Country, Year) 
+  arrange(Country, Year)%>%
+  unique()
+
+
 
 SDGExportPart3%>%
   writexl::write_xlsx( path = "RawData/SDGDataPart3.xlsx")
 
 SDGExportPart3%>%
-  write.csv( file =  "RawData/SDGDataPart3.csv", row.names = FALSE )
+  write.csv( file = "RawData/SDGDataPart3.csv", row.names = FALSE )
 
 ```
 
-### Line trends 
+## Line trends 
 We have observed `r length(unique(SDGExportPart3$Country))` countries in 3 regions of the world over the period 2000-2019. 
 
 ```{r lineplot}
-p <- SDGFull %>% 
+p <- SDGExportPart3 %>% 
   mutate(
     Year = as.factor(Year)
   ) %>%
@@ -646,9 +687,9 @@ ggplotly(p,
          alpha = 0.6)
 ```
 
-### Lines with facets 
+## Lines with facets 
 ```{r linefacet}
-SDGFull %>% 
+SDGExportPart3 %>% 
   mutate(
     Year = as.factor(Year)
   ) %>%
@@ -666,19 +707,23 @@ SDGFull %>%
         axis.text.x = element_text(angle = 60))
 ```
 
+####  Noticeable events
 * Haiti:  earthquake in **2010**
 * Mynamar: [Cyclone Nargis](https://en.wikipedia.org/wiki/Cyclone_Nargis#Impact) in **2008**
 
+### General comparison {-}
+
+Thanks to a good ordering of the regions (not alpahetical) and to the choice of the alignement, we see that the range of Infant Mortality values for Africa countries in 2019 is very simailar to the range that was observed for Asian countries in 2000. The same is true for the comparison of the  values of Asian countries in 2019 wich can be compared to the range in Americas in 2000. 
 
 
-### Evolution of values using densities
+## Evolution of values using densities
 
 Here we are interested by the shape of the distribution over time, and by comparing the distributions between regions of the world. 
 
 ```{r Ridgehisto}
 library(ggridges)
 # Plot
-SDGFull %>% 
+SDGExportPart3 %>% 
   mutate(
     Year = as.factor(Year)
   ) %>%
@@ -695,6 +740,7 @@ SDGFull %>%
 
 ```
 
+#### Using densities
 
 ```{r Ridge, fig.height=10, fig.width=5}
 library(ggridges)
@@ -703,9 +749,10 @@ mycolors <- colorRampPalette(brewer.pal(8, "Oranges"))(nb.years)
  
 
 # Plot
-SDGFull %>% 
+SDGExportPart3%>% 
   mutate(
     Year = as.factor(Year)
+    
   ) %>%
   filter(Region == "Africa" | Region == "Asia" | Region == "Americas" ) %>%
   ggplot( ) +
@@ -723,22 +770,24 @@ SDGFull %>%
 
 ```
 
+#### Using Boxplots
+
 ```{r BoxplotSet, fig.height=10, fig.width=5}
 
 # Plot
- SDGFull %>% 
+SDGExportPart3 %>% 
   mutate(
     Year = as.factor(Year)
   ) %>%
   filter(Region == "Africa" | Region == "Asia" | Region == "Americas" ) %>%
   ggplot( ) +
-  aes(x = Poverty, y = Year, fill = Year) +
-  geom_boxplot() +
+  aes(x = Mortality, y = Year, fill = Year) +
+  geom_boxplot(outlier.colour = "grey", outlier.alpha = 0.3) +
    facet_wrap(~factor(Region, levels=c( "Americas", "Asia", "Africa")),
              ncol =1) +
-  ggtitle(paste0(lab3, "over time per Region\n",unit3)) +
+  ggtitle(paste0(lab3, " over time per Region\n",unit3)) +
   xlab(lab3) +
-  theme_minimal()+
+  theme_tufte()+
   theme(legend.position = "none")
 
 ```
