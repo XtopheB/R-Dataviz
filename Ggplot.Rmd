@@ -37,8 +37,8 @@ ggplotColours <- function(n = 6, h = c(0, 360) + 15){
 
 ```{r libraries, echo = FALSE}
 library(readxl)
-library(tidyverse)
-
+#library(tidyverse)
+library(dplyr)
 
 library(ggplot2)
 library(ggthemes)
@@ -62,10 +62,10 @@ library(kableExtra)
 Mydata <- read.table(file ="Data/DG-Example-M4.csv")
 WV<-  read.table(file ="Data/M4-Economy-Data.csv")
 
-# Temp <- WV %>%
-#   select(country, Population.millions2019)
+Temp <- WV %>%
+  dplyr::select(country, Population.millions2019)
 
-Mydata <- merge(Mydata, select(WV,country, Population.millions2019) , by.x = "GeoAreaName", by.y = "country")
+Mydata <- merge(Mydata, Temp , by.x = "GeoAreaName", by.y = "country")
 
 Maternal.label <- "Maternal Mortality Indic. (3.1.1)"
 Poverty.label <- "Poverty Indic. (1.1.1)"
@@ -82,7 +82,7 @@ Mydata <- Mydata %>%
    Population = Population.millions2019, 
    Country = GeoAreaName
   ) %>%
-  select(
+  dplyr::select(
     Poverty, Maternal, Population, Age, Country, Period
   )
 
@@ -360,7 +360,7 @@ ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
   geom_point() +
   labs( x=  "Poverty Indic. (1.1.1)", 
         y = "Maternal Mortality Indic. (3.1.1)") +
-  ggtitle("Simple scatter plot a nice theme")
+  ggtitle("Simple scatter plot with a nice theme")
 
 
 ```
@@ -372,7 +372,7 @@ ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
 ```{r theme1}
 ggplot(Mydata, aes(x=Poverty, y= Maternal)) +
   geom_point() +
-  ggtitle("Simple scatter plot a nice theme") +
+  ggtitle("Simple scatter plot with a nice theme") +
    theme_bw()
   # theme_base()
   # theme_minimal()

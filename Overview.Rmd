@@ -770,7 +770,7 @@ ggplot(SDGMatPov.Time, aes(x=TimePeriod, ymax= PovYear)) +
        theme_minimal()
 ```
 
-## Visualiszing over time and categories 
+## Visualizing over time and categories 
 
 ```{r datatime}
 # create data

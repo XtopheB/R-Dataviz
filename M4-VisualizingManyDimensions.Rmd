@@ -475,9 +475,9 @@ S
 
 ## Interactive version 
 
-```{r ScatterPlotly}
+```{r ScatterPlotly, eval= FALSE}
 library(plotly)
-#ggplotly(S)
+ggplotly(S)
 style(S, hoverinfo = "none", traces = 1:2)
 ```
 # Small multiple

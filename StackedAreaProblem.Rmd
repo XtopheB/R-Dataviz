@@ -15,7 +15,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-# Remeber to disable png for Word export...
+# Remember to disable png for Word export...
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
                        results =FALSE, echo = FALSE,
                        fig.width=7, fig.height=4, 
