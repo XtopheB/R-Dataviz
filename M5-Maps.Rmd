@@ -1,16 +1,16 @@
 ---
-title: "Create maps with R"
+title: "Create (beautiful) maps with R"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document:
-    keep_tex: yes
-  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
+  html_notebook: default
+  pdf_document:
+    keep_tex: yes
   word_document: default
 ---
 
@@ -50,23 +50,22 @@ library(kableExtra)
 * [**Geocomputation with R**](https://geocompr.robinlovelace.net/index.html) Robin Lovelace, Jakub Nowosad, Jannes Muenchow, a,d in particular the chapter [*Making maps with R*](https://geocompr.robinlovelace.net/adv-map.html) 
 * Kieran Healy's [**Data Visualization book**](https://socviz.co/maps.html#maps) chapter on maps
 
-## On ggplot 
+### On ggplot{-}
 
 [ggplot2: Elegant Graphics for Data Analysis](https://ggplot2-book.org/maps.html) by Hadley Wickham
 
 
-# Data sets {-}
+## Data sets {-}
 We use the data from  [Natural Earth Data](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/) for 
-*all countries*, and in particular the sahpefiles proposed in the file *ne_10m_admin_0_countries.shp*
+*all countries*, and in particular the shapefiles *ne_10m_admin_0_countries.shp*
 
 
-
-# Making maps with the *sf* library
+# Using the shape files and the *sf* library
 
 *We use the tutorial provided by [Atlan](https://atlan.com/courses/introduction-to-gis-r/lesson2-manipulating-geospatial-data/)*
 
 
-The *sf* (Simple Features) package is the successor to the *sp* package. It allows to work in the *tidy* framework using spatial dataframe. Therefore, one can use the pipe an otehr tidy tools to  manipulate an sf object like an ordinary dataframe, or at least one with a few special characteristics.
+The *sf* (Simple Features) package is the successor to the *sp* package. It allows to work in the *tidy* framework using spatial data frames. Therefore, one can use the pipe an other tidy tools to  manipulate an sf object like an ordinary data frame, or at least one with a few special characteristics.
 
 
 ```{r Data}
@@ -81,7 +80,7 @@ glimpse(my_sf)
 ```
 
 
-```{r}
+```{r }
 st_crs(my_sf)
 
 ```
@@ -90,7 +89,7 @@ st_crs(my_sf)
 > One can extract only the geometry from the Spatial data.frame to see the shapes of the map
 
 ```{r}
-#oExtract only the geometry with sf:st_geometry
+# Extract only the geometry with sf:st_geometry
 
 my_geometry <- st_geometry(my_sf)
 plot(my_geometry, main = "Map Geometry")
@@ -118,7 +117,7 @@ plot(my_sf["POP_EST"],
 
 ```{r}
 my_asia <- my_sf %>%
-  filter(CONTINENT == "Asia" | CONTINENT == "Oceania" )
+  filter(CONTINENT == "Asia" )
 
 plot(my_asia["POP_EST"], 
      key.pos = 1,
@@ -129,29 +128,36 @@ plot(my_asia["POP_EST"],
 ```
 
 
-## Merging Spatial data sets
+# Merging Spatial data sets
 
-Here we already have a spatial data object that has its own projection system ( `r st_crs(my_sf)[1]`). We will merge this  spatial data frame  with a data set where the SDG indicator of interest (5.5.1) is recorded at the at the country level. The merging variable will be the name of the country, so there is no need here to worry about the projection correspondance and the adjustment of the spatial units reference since only one file is using a projection system.   
+Here we already have a spatial data object that has its own projection system ( `r st_crs(my_sf)[1]`). We will merge this  spatial data frame  with a data set where the SDG indicator of interest (5.5.1) is recorded at the at the country level. The merging variable will be the name of the country, so there is no need here to worry about the projection  and the adjustment of the spatial units reference since only one file is using a projection system.   
 
 ```{r}
-
 my_sdg <- read.csv("Data/Maps/SG_GEN_PARL_ap.csv", sep = ",")
-sdg_label <- "Population of seats held by women in national parliaments"
-
-# Keeping only esential values in the ShapeFile dataset
-# my_asia_reduced <- my_asia  %>%
-#   select("ADMIN", "NAME", "NAME_LONG")
-  
-
-my_map <- merge(my_sf, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName")  %>%
-  st_crop(c(xmin= -50, xmax = 500, ymin = -50,  ymax = 70))
+sdg_label <- "Seats held by women in national parliaments (%)"
 
 
 ```
 
 
 ```{r}
-plot(my_map["X2019"], 
+# Keeping only esential values in the ShapeFile dataset
+# my_asia_reduced <- my_asia  %>%
+#   select("ADMIN", "NAME", "NAME_LONG")
+
+
+my_geodata <- merge(my_sf, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName")  %>%
+  st_crop(c(xmin= -50, xmax = 500, ymin = -50,  ymax = 70))
+
+
+```
+
+# Choropleth Maps 
+
+## with *sf*
+
+```{r}
+plot(my_geodata["X2019"], 
      key.pos = 1,
      key.width = lcm(1.3), 
      key.length = 0.5, 
@@ -159,15 +165,17 @@ plot(my_map["X2019"],
      sub = "(SDG indic. 5.5.1)")
 ```
 
-## Adjusting the breaks
+### Adjusting the breaks{-}
+
 Here we clearly see that the colors applied to the map do not help understanding the various *levels$* of percentages for each country. 
 We can change the numbers of categories, the colors and length of each color category used for doing this map.  
+
 ```{r}
 # breaks using quintiles 
 
 my_nb_breaks <- 5
 
-plot(my_map["X2019"], 
+plot(my_geodata["X2019"], 
      nbreaks = my_nb_breaks,
      breaks = "jenks",
      pal = heat.colors(my_nb_breaks),
@@ -180,20 +188,20 @@ plot(my_map["X2019"],
 ```
 
 
+## With ggplot 
 
-# With ggplot 
-
-ggplot can easily represent an *sf* object and represent it as it would for any data frame using the **geom_sf**
+ggplot can easily represent an *sf* object and represent it as it would for any data frame using the **geom_sf**. By default, since the variable is continuous, *ggplot* uses a **continuous color palette**
 
 ```{r}
 library(ggplot2)
-ggplot(my_data) + 
+ggplot(my_geodata) + 
   geom_sf(aes(fill = X2019)) +
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")
 ```
+### A few improvements... {-}
 
 ```{r}
- ggplot(my_data) + 
+ ggplot(my_geodata) + 
   geom_sf(aes(fill = X2019)) +
   ggtitle(sdg_label) +
   theme_minimal() +
@@ -202,10 +210,10 @@ ggplot(my_data) +
         legend.title = element_text(color = "#235a91", size = 10))
 ```
 
-## Changing the map projection 
+### Changing the map projection {-} 
 
 ```{r}
-ggplot(my_data) + 
+ggplot(my_geodata) + 
   geom_sf(aes(fill = X2019)) +
   ggtitle(sdg_label) +
   theme_minimal() +
@@ -216,6 +224,174 @@ ggplot(my_data) +
   
 ```
 
+### Changing the break points and number of categories...
+
+#### Break points can be based on quantiles...{-}
+
+```{r}
+# Defining the nb of classes and breakpoints
+nb_classes <- 8
+```
+
+Here with *`r nb_classes`* classes
+
+```{r}
+my_breaks <- quantile(my_geodata$X2019,
+                      probs = seq(0, 1, length.out = nb_classes + 1),
+                      na.rm = TRUE)
+# Customize the labels
+my_breaks_labels <-  c()
+for(idx in 1:length(my_breaks)){
+my_breaks_labels <- c(my_breaks_labels, paste0(round(my_breaks[idx], 0), 
+                             " – ", 
+                             round(my_breaks[idx + 1], 0)))
+}
+# I need to remove the last label 
+# because that would be something like "66.62 - NA"
+my_breaks_labels <- my_breaks_labels[1:length(my_breaks_labels)-1]
+
+## We have to trasform the percentatges into a categorical variable. 
+my_geodata %>%
+  mutate(
+    my_class = cut(X2019, 
+                   breaks = my_breaks,
+                   labels = my_breaks_labels, 
+                   include.lowest = T))   %>%
+ggplot() + 
+  geom_sf(aes(fill = my_class)) +
+  # We may use a different color palette
+  #scale_fill_viridis(discrete = T)+
+  ggtitle(sdg_label) + 
+  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        legend.title = element_text(color = "#235a91", size = 10))
+  
+```
+
+#### Break points can be based on anything else {-}
+
+```{r}
+# Defining the nb of classes and breakpoints
+nb_classes <- 8
+my_breaks <- quantile(my_geodata$X2019,
+                      probs = seq(0, 1, length.out = nb_classes + 1),
+                      na.rm = TRUE)
+
+my_breaks <-  seq(0, max(my_geodata$X2019, na.rm=T),
+                  length.out = nb_classes + 1)
+                    
+
+# Customize the labels (rounding basically)
+my_breaks_labels <-  c()
+for(idx in 1:length(my_breaks)){
+my_breaks_labels <- c(my_breaks_labels, paste0(round(my_breaks[idx], 0), 
+                             " – ", 
+                             round(my_breaks[idx + 1], 0)))
+}
+my_breaks_labels <- my_breaks_labels[1:length(my_breaks_labels)-1]
+
+## We have to trasform the percentatges into a categorical variable. 
+my_geodata %>%
+  mutate(
+    my_class = cut(X2019, 
+                   breaks = my_breaks,
+                   labels = my_breaks_labels, 
+                   include.lowest = T))   %>%
+ggplot() + 
+  geom_sf(aes(fill = my_class)) +
+  # We may use a different color palette
+  #scale_fill_viridis(discrete = T)+
+  ggtitle(sdg_label) + 
+  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+  theme_minimal() +
+  theme(legend.position = "bottom", 
+        legend.title = element_text(color = "#235a91", size = 10))
+  
+```
+
+# Proportionnal symbol maps 
+## Bubble charts) with ggplot
+
+```{r}
+# we need to have the lat and logitude of each countries to be able to place the circles (points) 
+world_data <- map_data("world") %>%
+  select(region, lat, long) %>%
+  group_by(region) %>%
+  mutate(my_lat = median(lat, na.rm = TRUE), 
+         my_long = median(long, na.rm = TRUE)) %>%
+  distinct(region,my_lat, my_long, .keep_all = TRUE) %>%
+  filter(
+    long >50
+  )
+# Adding this information to my spatial data set
+my_geodata_world <- merge(my_geodata, world_data, by.x= "NAME_LONG", by.y = "region")
+
+
+my_geodata_world %>%
+ggplot() + 
+ geom_sf( color = "grey", fill = "white") +
+ geom_point(aes(x=my_long, y=my_lat, size= X2019),
+            color = SIAP.color ,
+            stroke=F, 
+            alpha=0.5) +
+
+  ggtitle(sdg_label) + 
+  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(color = SIAP.color, size = 10))
+```
+
+### Caveat! {-} 
+
+For *geom_point*, the size parameter scales **both** the x and y dimension of the point
+proportionately. So a value that is double than another will have its surface multiplied by 4
+Hence, the size of the points in R are proportional to its $radius^2$ . This is not a good way to practice!
+
+```{r}
+ggplot(data.frame(x     = 0, 
+                  y     = 0, 
+                  panel = c("A", "B", "C"), 
+                  value = c(10, 20, 40))) + 
+  geom_point(aes(x, y, size = value), color = SIAP.color) +
+  coord_cartesian(xlim = c(-10, 10), ylim = c(-10,10)) +
+  scale_y_continuous(breaks = c(-5, -2.5, 0, 2.5,5)) +
+  scale_size_identity() +
+  facet_wrap(.~panel) +
+  theme_minimal() +
+  theme(panel.grid.minor.x = element_blank())
+```
+ 
+
+### Solution: Compute the right value and plot the surface  {-}
+
+```{r}
+my_geodata_world %>%
+  mutate(area_X2019 = sqrt(X2019))%>%
+ggplot() + 
+ geom_sf( color = "grey", fill = "white") +
+ geom_point(aes(x=my_long, y=my_lat, size= area_X2019),
+            color = SIAP.color ,
+            alpha=0.5) +
+  scale_size_area() +
+  ggtitle(sdg_label) + 
+  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(color = SIAP.color, size = 10))
+```
+
+
+## *Real* cartography packages:  *tmap* or *cartography*
+
+
+
+
+
+```{r}
+knitr::knit_exit()
+```
 
 
 
@@ -232,757 +408,4 @@ my_highlow <- c('#fc8d59','#ffffbf','#91bfdb')
 ```
 
 
-
-# With *tmap*
-
-```{r}
-knitr::knit_exit()
-```
-
-
-
-
-
-```{r DataLabelCleaning}
-# Cleaning variables names
-library(janitor)
-LongLabels <- names(WV) # keeping for future usage
-
-names(WV) <-Shortlabels
-WV <-  janitor::clean_names(WV)
-
-names(WV)[8] <-  "PPP Income per cap"
-names(WV)[10] <- " GDP growth per cap "
-names(WV)[11] <- " Share of Income (<20%)"
-names(WV)[12] <- " Child malnutrition (%)"
-names(WV)[15] <- " HIV (per 1000)"
-names(WV)[16] <- " Tuberculosis (per 100k)"
-names(WV)[17] <- " Road Mortality (per 100k)"
-names(WV)[19] <- " Male employment (%)"
-names(WV)[20] <- " Female employment (%)"
-names(WV)[22] <- " Pop. Access Water (%)"
-names(WV)[23] <- " Pop. Access Sanitary (%)"
-names(WV)[27] <- " Slums Pop.(%)"
-names(WV)[29] <- " Savings (% of GNI)"
-names(WV)[30] <- " CO2 per cap."
-names(WV)[31] <- " Marine areas (%)"
-names(WV)[48] <- " Developped"
-
-# removing  variables (country classification)
-WV <- WV %>%
-  select(!c(34:35, 40:43, 45:47, 49))
-
-var.select <- c(4, 8, 10:33)
-var.shortlist <-c(8, 10:16, 18, 20:22, 29:30)
-
-```
-
-### Glimpse of the data{-}
-
-```{r TableFull, echo = FALSE, results=TRUE}
-t <-  kbl(WV[1:10,c(1,var.shortlist)])
-kable_styling(t,full_width = F)
-
-# For interactive view of recording 
-# View(SDGPov[c("Indicator","Age", "Poverty" )])
-```
-
-
-# Missing values 
-
-```{r missing}
-library(naniar)
-# See https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
-# miss_var_summary(WV, order = TRUE)
-
-gg_miss_var(subset(WV, is.na(region_name)== FALSE),
-            show_pct = TRUE) + 
-  labs(y = "Missing observations (%)") +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.y =  element_text(size=4)
-  )
-
-```
-
-## By region{-}
-```{r missing1}
-library(naniar)
-# See https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
-# miss_var_summary(WV, order = TRUE)
-
-gg_miss_var(subset(WV, is.na(region_name)== FALSE),
-            show_pct = TRUE, 
-            facet = region_name ) + 
-  labs(y = "Missing observations (%)") +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.y =  element_text(size=4)
-  )
-
-```
-
-
-## Heatmap
-
-
-```{r missingHeat}
-Mytemp <- subset(WV[,], is.na(region_name)== FALSE)
-
-# From https://github.com/njtierney/naniar/issues/183 
-ggmissfct <- function(order_missing = FALSE, custom_order = NULL) {
-    if (order_missing == TRUE) {
-        desc_missing <- Mytemp %>%
-            dplyr::select(-region_name) %>% 
-            miss_var_summary() %>% 
-            dplyr::pull(variable)
-    } else {
-        desc_missing <- NULL
-    }
-    
-    Mytemp %>%
-        dplyr::group_by(region_name) %>%
-        miss_var_summary() %>%
-        dplyr::mutate(variable = factor(variable,
-                                        levels = (sort(unique(variable),
-                                                       decreasing = TRUE))) %>% 
-                          forcats::fct_relevel(rev(desc_missing), after = Inf) %>% 
-                          forcats::fct_relevel(rev(custom_order), after = Inf)) %>%
-        ggplot(aes(region_name,
-                   variable,
-                   fill = pct_miss)) +
-        geom_tile() +
-        viridis::scale_fill_viridis(name = "% Miss") +
-        theme(
-    plot.title = element_text(size=10),
-    legend.position = "bottom",
-    axis.text.y =  element_text(size=5)
-  )
-    
-}
-
-# By default
-ggmissfct(order_missing = FALSE)
-```
-
-```{r missingHeat2}
-#Ordered by missing percentage
-ggmissfct(order_missing = TRUE)
-```
-
-## Imputing missing values (for a better visual demonstration){-}
-
-
-```{r missing3}
-library(Amelia)
-# Computing values to input (long computation)
-#res.amelia <- amelia(WV[,2:33], m = 2)  
-#save(res.amelia, file ="Data/res.amelia")
-
-load(file = "Data/res.amelia")
-
-# Binding the imputed variables 
-WV.comp <- cbind(WV[,1], res.amelia$imputations$imp1, WV[,34:ncol(WV)])
-names(WV.comp)[1] <- "country"
-
-missmap(WV.comp, 
-        rank.order = TRUE)
-
-```
-
-
-# Continuous and discrete
-
-## Histogram 
-
-```{r HistoSpineGrey}
-WV %>%
- filter(!is.na(` CO2 per cap.`)) %>%
- filter(!is.na(region_name)) %>%
- filter(` Developped` %in% 
-    c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = ` CO2 per cap.`  ) +
- geom_histogram(bins = 61L, fill = "#bdbdbd") +
- theme_minimal() +
- theme(legend.position = "bottom")
-
-```
-
-# Rather than stacking histograms, it's easier to compare frequency
-
-
-```{r HistoSpine}
-WV %>%
- filter(!is.na(` CO2 per cap.`)) %>%
- filter(!is.na(region_name)) %>%
- filter(` Developped` %in% 
-    c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = ` CO2 per cap.`, fill = region_name) +
- geom_histogram(bins = 61L) +
- scale_fill_hue() +
- theme_minimal() +
- theme(legend.position = "bottom")
-
-```
-
-# Categories
-
-```{r CatData}
-# We create new categorical variables
-# Computing quantiles  of CO2
-Q_CO2=quantile(WV$` CO2 per cap.`,c(0,1/3,2/3,1), na.rm = TRUE)
-Q_CO2[1]=Q_CO2[1]-.00005
-
-# Computing quantiles  of population
-Q_pop=quantile(WV$population,c(0,1/4,1/2, 3/4, 1), na.rm = TRUE)
-Q_pop[1]=Q_pop[1]-.00005
-
-# Computing quantiles  of population
-Q_pop_dens=quantile(WV$population_density,c(0,1/4,1/2, 3/4, 1), na.rm = TRUE)
-Q_pop_dens[1]=Q_pop[1]-.00005
-
-WV <- WV %>%
-  mutate(
-    CO2_emissions_cat = cut(` CO2 per cap.`,  breaks=Q_CO2, 
-                            labels=c("low","medium","high")),
-    Country_pop_cat = cut(population,  breaks=Q_pop, 
-                      labels=c("lower", "low","high", "highest")),
-    
-    Country_density_cat = cut(population_density,  breaks=Q_pop_dens, 
-                      labels=c("lower", "low","high", "highest")),
-
-  )
-#names(WV)[ncol(WV)] <- "CO2 emission per cap. (cat.) "
-
-```
-
-## Mosaic plot
-
-```{r mosaic}
-
-
-mosaicplot(table(WV$region_name, WV$CO2_emissions_cat),
-  #color = TRUE,
-  #shade = FALSE,
-   col = rev(my_highlow), 
-  main = " Mosaic plot of CO2 emisions per region", 
-  xlab = "Regions", # label for x-axis
-  ylab = paste("CO2 emissions \n (High Medium, Low)") # label for y-axis
-)
-```
-
-## Stacked bars
-
-```{r StackedBar}
-WV %>%
- filter(
-   !is.na(` CO2 per cap.`),
-   !is.na(region_name),
-   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = CO2_emissions_cat ,fill = region_name, weight = population) +
- geom_bar() +
- scale_fill_hue() +
-labs( title= "Population by region according to CO2 emissions classification \n(Stacked bars)" ) +
- ylab("Population (millions)")+
- xlab(" CO2 emissions category")+
- theme_tufte() +
- theme(legend.position = "bottom")
-```
-
-
-
-```{r StackedBarDodged}
-WV %>%
- filter(
-   !is.na(` CO2 per cap.`),
-   !is.na(region_name),
-   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = CO2_emissions_cat ,fill = region_name, weight = population) +
- geom_bar(position = "dodge") +
- labs( title= "Population by region according to CO2 emissions classification \n(dodged bars)" ) +
- ylab("Population (millions)")+
- xlab("CO2 emissions category")+
- scale_fill_hue() +
- theme_tufte() +
- theme(legend.position = "bottom")
-```
-
-
-```{r StackedBarSmall}
-WV %>%
- filter(
-   !is.na(` CO2 per cap.`),
-   !is.na(region_name),
-   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = CO2_emissions_cat ,fill = CO2_emissions_cat, weight = population) +
- geom_bar(position = "dodge") +
- facet_wrap(~region_name) +
- labs( title= "Population by region according to CO2 emissions classification \n(small multiple bars)" ) +
-ylab("Population (millions)")+
- xlab("CO2 emissions category")+
- scale_fill_brewer(palette = "Oranges") +
- theme_tufte() +
- theme(legend.position = "bottom")
-```
-
-# Dual version, looking at CO2 emissions by population density categories
-
-```{r StackedCO2}
-WV %>%
- filter(
-   !is.na(Country_density_cat),
-   !is.na(region_name),
-   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = Country_density_cat, fill = region_name, weight = ` CO2 per cap.`) +
- geom_bar() +
- ggtitle("CO2 emissions per population density classification of countries (stacked bars)" ) +
- ylab("CO2 emissions per cap.")+
- xlab("Countries density levels")+
- scale_fill_hue() +
-  theme_tufte() +
- theme(legend.position = "bottom")
-```
-
-
-
-```{r StackedCO2Dogde}
-WV %>%
- filter(
-   !is.na(Country_density_cat),
-   !is.na(region_name),
-   ` Developped` %in%   c("Developing", "Developed") | is.na(` Developped`)) %>%
- ggplot() +
- aes(x = Country_density_cat, fill = region_name, weight = ` CO2 per cap.`) +
- geom_bar(position = "dodge") +
- ggtitle("CO2 emissions per population density classification of countries (dodged bars)" )+
- ylab("CO2 emissions per cap.")+
- xlab("Countries density levels")+
- scale_fill_hue() +
-  theme_tufte() +
- theme(legend.position = "bottom")
-```
-# Scatterplot 
-
-```{r ScatterSize}
-
-S <-WV %>%
- filter(` Developped` %in% c("Developing", "Developed") | is.na(` Developped`),
-        population_density < 5000, 
-        !is.na(region_name)) %>%
- ggplot() +
- aes(x = population_density, y = ` CO2 per cap.`, colour = region_name, size = population) +
- geom_point() +
- ggtitle(" Relationship between CO2 emissions and country density") +
- ylab("CO2 emissions per cap.")+
- xlab("Countries density (people per sq. km)")+
- theme_tufte() +
- theme(legend.position = "bottom", legend.box="vertical")
-
-S
-
-```
-
-## Interactive version 
-
-```{r ScatterPlotly, eval= FALSE}
-library(plotly)
-ggplotly(S)
-style(S, hoverinfo = "none", traces = 1:2)
-```
-# Small multiple
-
-
-```{r Scattermultiple}
-WV %>%
- filter(` Developped` %in% c("Developing", "Developed") | is.na(` Developped`),
-        population_density < 5000, 
-        !is.na(region_name)) %>%
- ggplot() +
- aes(x = population_density, y = ` CO2 per cap.`, colour = region_name) +
- geom_point() +
- facet_wrap(~region_name)+
- ggtitle(" Relationship between CO2 emissions and country density per region") +
- ylab("CO2 emissions per cap.")+
- xlab("Countries density (people per sq. km)")+
- theme_tufte() +
- theme(legend.position = "bottom")
-```
-
-
-
-# Scatterplot Matrix simple
-
-```{r Scattermatrixsmall}
-
-pairs(subset(WV.comp[,c(10, 12,15, 30)], !is.na(WV.comp$region_name)),
-             , pch = 19, 
-      col = my_cols[WV$region_name],
-      #col = "grey",
-      upper.panel = NULL)
-```
-
-# Scatterplot Matrix full
-
-
-```{r Scattermatrix}
-
-pairs(WV.comp[,var.shortlist], pch = 19, 
-       col = my_cols[WV$region_name],
-      # col = "grey",     
-      upper.panel = NULL,
-      cex.labels = 0.3)
-```
-
-
-
-
-# Combined Scatterplot/correlation with GGally::ggpairs
-
-```{r ggpairs1}
-library(GGally)
-WVshort <- WV.comp[,c(10,12,15,30,37)] %>%
-  filter(
-  !is.na(WV.comp$region_name)
-  )
- 
-ggpairs(WVshort,
-        columns = 1:4,
-        columnLabels = gsub('.', ' ', colnames(WVshort[,1:4]), fixed = T), 
-        labeller = label_wrap_gen(10), 
-        upper = "blank",
-        #upper = list(continuous = wrap("cor", size = 9)),
-        aes(colour = WVshort$region_name, alpha= 0.1),
-        title="Correlogram for 4 variables") +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-
-```
-
-
-```{r ggpairs2}
-WVshort <- WV.comp[, c(var.shortlist[1:10], 37)] 
- 
-ggpairs(WVshort,
-        columns = 1:10,
-        columnLabels = gsub('.', ' ', colnames(WVshort[,1:10]), fixed = T), 
-        labeller = label_wrap_gen(10), 
-        upper = "blank",
-        lower = list(continuous = wrap("points", alpha = 0.3, size=0.2)),
-        #upper = list(continuous = "cor"),
-        aes(colour = WV$region_name, alpha= 0.1 ), 
-        title="Correlogram for 10 variables") +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-
-```
-
-
-
-```{r ggpairs3,  eval = FALSE}
-WVshort <- WV.comp[, c(2:32, 37)] 
- 
-gg <-ggpairs(WVshort,
-        columns = 1:31,
-        columnLabels = gsub('.', ' ', colnames(WVshort[,1:31]), fixed = T, ), 
-        labeller = label_wrap_gen(10), 
-        lower = list(continuous = wrap("points", alpha = 0.3, size=0.05)),
-        upper = "blank",
-        #upper = list(continuous = wrap("cor", size = 9)),
-        aes(colour = WVshort$region_name, alpha= 0.1),
-        title="Correlogram for 30+ variables")
-
-gg + theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=4, angle = 60, hjust = 1), 
-    axis.text.y =  element_text(size=4), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-
-```
-
-
-
-
-
-
-
-# Correlation Matrix
-
-```{r CorrelationMatrix1}
-library(ggcorrplot)
-
-# We compute the correlation matrix of the covariates
-corr_coef<-cor(WV.comp[,c(30, 10, 12,15,18, 22)],use = "p")
-
-#And then plot it with nice options 
-ggcorrplot(corr_coef, 
-           type = "lower",         # lower triangle of the matrix only
-           #hc.order = TRUE,        # variable sorted from highest to lowest
-           outline.col = "white",  #Color options
-           lab = TRUE)+
-  theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    #legend.position = "bottom"
-  )
-
-```
-
-
-```{r CorrelationMatrix2}
-library(ggcorrplot)
-
-# We compute the correlation matrix of the covariates
-corr_coef<-cor(WV.comp[, 2:33],use = "p")
-
-#And then plot it with nice options 
-ggcorrplot(corr_coef, 
-           type = "lower",         # lower triangle of the matrix only
-           # hc.order = TRUE,        # variable sorted from highest to lowest
-           outline.col = "white",  #Color options
-           lab = FALSE)+
-  theme_tufte() +
-   theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=6, angle = 60, hjust = 1),
-    legend.title = element_text(size=8),
-    legend.key.size = unit(0.5,"line")
-    #axis.text.x =  element_blank(),
-    #legend.position = "bottom"
-  )
-```
-
-
-
-```{r CorrelationMatrix3}
-library(ggcorrplot)
-
-# We compute the correlation matrix of the covariates
-corr_coef<-cor(WV.comp[, 2:33],use = "p")
-
-#And then plot it with nice options 
-ggcorrplot(corr_coef, 
-           type = "lower",         # lower triangle of the matrix only
-           hc.order = TRUE,        # variable sorted from highest to lowest
-           outline.col = "white",  #Color options
-           lab = FALSE)+
-  theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=6, angle = 60, hjust = 1),
-    legend.title = element_text(size=8),
-    legend.key.size = unit(0.5,"line")
-    #axis.text.x =  element_blank(),
-    #legend.position = "bottom"
-  )
-```
-
-# Parallel Coordinates chart
-
-```{r ParallelMass}
-library(MASS)
-
-#parcoord(WV[,c(4,6, 8, 10)], col = "grey")
-parcoord(WV.comp[,var.shortlist], col = "grey", 
-         var.label = TRUE)
-
-
-```
-
-
-```{r ParallelGblack }
-library(GGally)
-library(viridis)
-library(hrbrthemes)
-ggparcoord(WV.comp[,c(var.shortlist, 35)],
-    columns = c(1: length(var.shortlist)),
-    #groupColumn = "region_name",
-    showPoints = FALSE, 
-    scale="uniminmax",    # "std" "center",
-    #missing = "median",  # Not needed since WV.com
-    title = "Parallel Coordinate Plot for Global Economy variables",
-    alphaLines = 0.9
-    ) + 
- # scale_color_manual(values=c("#69b3a2", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
- # scale_color_viridis(discrete=TRUE) +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-
-```
-
-
-
-
-```{r ParallelGrey }
-ggparcoord(WV.comp[,c(var.shortlist, 35)],
-    columns = c(1: length(var.shortlist)),
-    #groupColumn = "region_name",
-    showPoints = FALSE, 
-    scale="uniminmax",    # "std" "center",
-    #missing = "median",  # Not needed since WV.com
-    title = "Parallel Coordinate Plot for Global Economy variables",
-    alphaLines = 0.3
-    ) + 
- # scale_color_manual(values=c("#69b3a2", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
- # scale_color_viridis(discrete=TRUE) +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=9, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-
-```
-
-
-```{r ParallelG1 }
-p<-ggparcoord(WV.comp[,c(1, var.shortlist, 35)],
-    columns = c(2: length(var.shortlist)),
-    groupColumn = "region_name",
-    showPoints = FALSE, 
-    scale="uniminmax",    # "std" "center",
-    #missing = "median", 
-    title = "Parallel Coordinate Plot for Global Economy variables",
-    alphaLines = 0.3
-    ) + 
-  scale_color_manual(values=my_cols) +
-  geom_line(aes(text= paste( country, "-", region_name)))+
- # scale_color_viridis(discrete=TRUE) +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=8, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-p
-```
-
-# Interactive version
-
-```{r ParallelPlotly}
-library(plotly)
-ggplotly(p, 
-         tooltip = c("country,region_name"),
-         alpha = 0.6)
-
-```
-
-
-```{r ParallelSpecific}
-ggparcoord(WV.comp,
-    columns = var.shortlist,
-    groupColumn = "region_name",
-    showPoints = FALSE, 
-    scale="uniminmax",
-    missing = "median",
-    title = paste("Parallel Coordinate Plot for Global Economy variables", "\n",
-                  "Focusing on a specific region"),
-    alphaLines = 0.9
-    ) + 
- scale_color_manual(values=c( "#F8766D", "#E8E8E8", "#E8E8E8", "#E8E8E8", "#E8E8E8")) +
- # scale_color_viridis(discrete=TRUE) +
- theme_tufte() +
-  theme(
-    plot.title = element_text(size=10), 
-    axis.text.x =  element_text(size=6, angle = 60, hjust = 1), 
-    #axis.text.x =  element_blank(),
-    legend.position = "bottom"
-  )
-
-```
-
-# Another interactive version (axes reordering)
-
-```{r parcoords }
-library(parcoords)
-# see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
-
-# Here we can play with axis order
-
-parcoords(WV.comp[, c(35, var.shortlist)],
-  rownames = FALSE,
-  #brushMode = '1D-axes',
-  brushPredicate = "or", # "and" "or"
-  alphaOnBrushed = 0.2,
-  color = SIAP.color, alpha = 0.5,
-  bundleDimension = " GDP growth per cap ",  # One variable
-  bundlingStrength = 1, 
-  smoothness = 0,  # lines = 0, curves = 1
-  reorderable = TRUE)
-```
-
-
-```{r parcoordsBrush }
-library(parcoords)
-# see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
-
-# Here we can play with brushing  and selecting (mainly)
-parcoords(WV.comp[, c(35, var.shortlist)],
-  rownames = FALSE,
-  brushMode = '1D-axes',
-  brushPredicate = "or", # "and" "or"
-  alphaOnBrushed = 0.2,
-  color = SIAP.color, alpha = 0.5,
-  bundleDimension = " GDP growth per cap ",  # One variable
-  bundlingStrength = 1, 
-  smoothness = 0,  # lines = 0, curves = 1
-  reorderable = TRUE)
-```
-
-## Paralel coordinates with soft lines
-
-```{r parcoordssmooth }
-library(parcoords)
-# see https://cran.r-project.org/web/packages/parcoords/vignettes/introduction-to-parcoords-.html
-
-
-parcoords(WV.comp[, c(35, var.shortlist)],
-  rownames = FALSE,
-  brushMode = '1D-axes',
-  brushPredicate = "or", # "and" "or"
-  alphaOnBrushed = 0.2,
-  color = SIAP.color, alpha = 0.2,
-  bundleDimension = " GDP growth per cap ",  # One variable
-  bundlingStrength = 1, 
-  smoothness = 0.2,  # lines = 0, curves = 1
-  reorderable = TRUE)
-```
-
-
-
-```{r}
-knitr::knit_exit()
-```
 
