@@ -18,7 +18,7 @@ output:
 ```{r setup, include=FALSE}
 # Remeber to disable png for Word export...
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
-                       results =FALSE, echo = FALSE,
+                       results =FALSE, echo = TRUE,
                        dev="png", 
                        dev.args=list(type="cairo"), dpi=96)
 
@@ -35,13 +35,13 @@ ggplotColours <- function(n = 6, h = c(0, 360) + 15){
 
 
 ```{r libraries}
-library(tidyverse)
-library(viridis)
-library(ggthemes)
-library(ggplot2)
-library(forcats)
 library(knitr)
+library(tidyverse)
+library(forcats)
+library(ggplot2)
+library(ggthemes)
 library(kableExtra)
+library(viridis)
 
 ```
 # Useful sources {-}
@@ -52,12 +52,16 @@ library(kableExtra)
 
 ### On ggplot{-}
 
-[ggplot2: Elegant Graphics for Data Analysis](https://ggplot2-book.org/maps.html) by Hadley Wickham
+[ggplot2: Elegant Graphics for Data Analysis](https://ggplot2-book.org/maps.html) by Hadley Wickham, and the [*sf* vignette](https://cran.r-project.org/web/packages/sf/vignettes/sf5.html)
 
 
 ## Data sets {-}
-We use the data from  [Natural Earth Data](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/) for 
-*all countries*, and in particular the shapefiles *ne_10m_admin_0_countries.shp*
+* We use the data from  [Natural Earth Data](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/) for 
+*all countries*, and in particular the shapefiles *ne_10m_admin_0_countries.shp*. The maps include not only the shape  of the countries but also some other variables. The projection used is the WGS84 (World Geodetic System 1984) that [preserves areas and distances](https://en.wikipedia.org/wiki/World_Geodetic_System#Longitudes_on_WGS_84). 
+
+* For the SDG, we use the SDG 5.5.1 indicator  (*SG_GEN_PARL_ap.csv*) available  as a CSV file from [UNSSTAT database](https://unstats.un.org/SDGS/Indicators/Database/) 
+
+*The data sets can also be downloaded from the course LMS*
 
 
 # Using the shape files and the *sf* library
@@ -72,21 +76,18 @@ The *sf* (Simple Features) package is the successor to the *sp* package. It allo
 library(sf)
 
 #loading Shapefiles
-library(sf)
 my_sf <- st_read("Data/Maps/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
 
-glimpse(my_sf)
 
-```
-
-
-```{r }
+# CRS used in this spatial data frame
 st_crs(my_sf)
 
 ```
 
 
-> One can extract only the geometry from the Spatial data.frame to see the shapes of the map
+
+
+> One can extract the geometry from the Spatial data.frame to see the shapes of the map
 
 ```{r}
 # Extract only the geometry with sf:st_geometry
@@ -97,7 +98,7 @@ plot(my_geometry, main = "Map Geometry")
 
 ```
 
-There are many information already in the shapefile, we can plot all of them here...
+There are many information already in the shapefile, we can plot 9 of them here (by default).
 
 ```{r}
 plot(my_sf)
@@ -113,13 +114,13 @@ plot(my_sf["POP_EST"],
      main = "Population (est. 2017)")
 ```
 
-... or part of it..
-
+ We can also restrict the map to the region of the world we want. 
+ 
 ```{r}
-my_asia <- my_sf %>%
+my_map <- my_sf %>%
   filter(CONTINENT == "Asia" )
 
-plot(my_asia["POP_EST"], 
+plot(my_map["POP_EST"], 
      key.pos = 1,
      key.width = lcm(1.3), 
      key.length = 0.5,
@@ -130,27 +131,55 @@ plot(my_asia["POP_EST"],
 
 # Merging Spatial data sets
 
-Here we already have a spatial data object that has its own projection system ( `r st_crs(my_sf)[1]`). We will merge this  spatial data frame  with a data set where the SDG indicator of interest (5.5.1) is recorded at the at the country level. The merging variable will be the name of the country, so there is no need here to worry about the projection  and the adjustment of the spatial units reference since only one file is using a projection system.   
+Here we already have a spatial data object that has its own projection system ( WGS 84). We will merge this  spatial data frame  with a data set where the SDG indicator of interest (5.5.1) is recorded at the at the country level. The merging variable will be the name of the country, so there is no need here to worry about the projection  and the adjustment of the spatial units reference since only one file is using a projection system.   
 
-```{r}
+
+##  The SDG Indicator data set
+
+An overview of the main variables of this data set. The variable *GeoAreaName* will serve as key for merging. 
+
+```{r, echo =TRUE}
 my_sdg <- read.csv("Data/Maps/SG_GEN_PARL_ap.csv", sep = ",")
 sdg_label <- "Seats held by women in national parliaments (%)"
 
+toshow <- c("Indicator", "GeoAreaName", "Units", "X2019" )
+t <-  kbl(my_sdg[1:10,toshow])
+kable_styling(t,full_width = F, )
+
+```
+
+
+## The Spatial data Frame (shape file)
+
+The original file contains many variables with administrative information,some statistics (population, GDP, income, ... ) that are not useful for our work. Moreover, we can reduce the size of the map to include only the countries that we focus on. 
+
+```{r}
+# We can only keep the variables and region we need...
+SFvariables <- c("NAME_LONG", "ABBREV", "ADM0_A3", "REGION_UN",  "geometry" )
+
+my_sf_asia <- my_sf %>%
+  filter(CONTINENT == "Asia" | CONTINENT =="Oceania"
+         ) %>%
+  select(SFvariables)
+
+
+t <-  kbl(my_sf_asia[1:10,])
+kable_styling(t,full_width = F, )
 
 ```
 
 
 ```{r}
-# Keeping only esential values in the ShapeFile dataset
-# my_asia_reduced <- my_asia  %>%
-#   select("ADMIN", "NAME", "NAME_LONG")
 
+# Merging the geo spatial data wit SDG data at the country level
 
-my_geodata <- merge(my_sf, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName")  %>%
-  st_crop(c(xmin= -50, xmax = 500, ymin = -50,  ymax = 70))
-
+my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName") %>%
+  st_crop(c(xmin= 00, xmax = 500, ymin = -50,  ymax = 70))
 
 ```
+
+After merging at the country level we have now **in  the same spatial data frame** the country shape files and the SDG indicator we want to represent, plus some additional variables such as names, regions etc...
+
 
 # Choropleth Maps 
 
@@ -167,18 +196,27 @@ plot(my_geodata["X2019"],
 
 ### Adjusting the breaks{-}
 
-Here we clearly see that the colors applied to the map do not help understanding the various *levels$* of percentages for each country. 
+Here we clearly see that the colors applied to the map do not help understanding the various *levels* of percentages for each country. 
+
 We can change the numbers of categories, the colors and length of each color category used for doing this map.  
+There are various methods one can use to select the right color classes (manually, linear, quantiles, ...). Among the various methods, we have the *Jenks*the method seeks to reduce the variance within classes and maximize the variance between classes)
 
 ```{r}
-# breaks using quintiles 
+# Breaks using different methods equal, quantile jenks
 
-my_nb_breaks <- 5
+# Automatically
+my_breaks <- "equal"
+my_nb_breaks <- 10
+
+# Manually
+# my_breaks <- c(0,2, 4, 8, 16, 32, 40 )
+# my_nb_breaks <- length(my_breaks) -1
 
 plot(my_geodata["X2019"], 
      nbreaks = my_nb_breaks,
-     breaks = "jenks",
-     pal = heat.colors(my_nb_breaks),
+     breaks = my_breaks,
+     # pal = heat.colors(my_nb_breaks),
+     pal = sf.colors(my_nb_breaks, categorical = FALSE),
      key.pos = 1,
      key.width = lcm(1.4), 
      key.length = 0.5, 
@@ -190,7 +228,8 @@ plot(my_geodata["X2019"],
 
 ## With ggplot 
 
-ggplot can easily represent an *sf* object and represent it as it would for any data frame using the **geom_sf**. By default, since the variable is continuous, *ggplot* uses a **continuous color palette**
+ggplot can easily represent an *sf* object and represent it as it would for any data frame using the **geom_sf**. By default, since the variable is continuous, *ggplot* uses a **continuous color palette**.
+
 
 ```{r}
 library(ggplot2)
@@ -212,6 +251,8 @@ ggplot(my_geodata) +
 
 ### Changing the map projection {-} 
 
+here we switch to Australia Lambert projection. 
+
 ```{r}
 ggplot(my_geodata) + 
   geom_sf(aes(fill = X2019)) +
@@ -226,6 +267,9 @@ ggplot(my_geodata) +
 
 ### Changing the break points and number of categories...
 
+
+
+
 #### Break points can be based on quantiles...{-}
 
 ```{r}
@@ -233,7 +277,7 @@ ggplot(my_geodata) +
 nb_classes <- 8
 ```
 
-Here with *`r nb_classes`* classes
+Here with `r nb_classes` classes
 
 ```{r}
 my_breaks <- quantile(my_geodata$X2019,
@@ -310,8 +354,90 @@ ggplot() +
   
 ```
 
-# Proportionnal symbol maps 
-## Bubble charts) with ggplot
+> Cartography packages:  *tmap* and *cartography* {-}
+
+
+## With the amazing library *tmap*
+
+```{r}
+library(tmap)
+
+tmap_mode("view")
+tm_shape(my_geodata) +
+  tm_polygons("X2019") +
+  tm_facets(by = "REGION_UN", as.layers = TRUE, free.coords = FALSE, drop.units = TRUE) 
+
+
+```
+
+```{r}
+tmap_mode("plot")
+tm_shape(my_geodata) +
+  tm_polygons("X2019") +
+  tm_facets(by = "REGION_UN")
+```
+
+
+```{r}
+tmap_mode("view")
+tm_shape(my_geodata) +
+  tm_polygons("X2019") +
+  tm_facets(by = "REGION_UN", as.layers = TRUE, free.coords = FALSE, drop.units = TRUE) 
+```
+
+
+
+
+### with the *Cartography* package 
+
+```{r}
+library(cartography)
+
+# First: define the shape of the map
+plot(st_geometry(my_geodata),
+     col= "#f0f0f0",
+     border = "black", 
+     bg = "#aadaff")
+
+# Second: add a Choropleth layer with the variable encoded in categories...
+my_classes <- 8
+my_method <-  "quantile"
+
+
+choroLayer(
+  x = my_geodata, 
+  var = "X2019",
+  method = my_method,
+  nclass= my_classes,
+  # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
+  col = heat.colors(my_classes),
+  colNA	= "grey",
+  border = "grey", 
+  lwd = 0.5,
+  legend.pos = c(40,-50), 
+  legend.horiz = TRUE, 
+  legend.title.txt = paste("Method:", my_method,",", my_classes,"classes"),
+  add = TRUE
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+
+```
+
+
+# Proportional symbol maps 
+## Bubble charts with ggplot
+
 
 ```{r}
 # we need to have the lat and logitude of each countries to be able to place the circles (points) 
@@ -330,7 +456,7 @@ my_geodata_world <- merge(my_geodata, world_data, by.x= "NAME_LONG", by.y = "reg
 
 my_geodata_world %>%
 ggplot() + 
- geom_sf( color = "grey", fill = "white") +
+ geom_sf( color = "grey", fill = "white")+
  geom_point(aes(x=my_long, y=my_lat, size= X2019),
             color = SIAP.color ,
             stroke=F, 
@@ -342,6 +468,8 @@ ggplot() +
   theme(legend.position = "bottom",
         legend.title = element_text(color = SIAP.color, size = 10))
 ```
+
+
 
 ### Caveat! {-} 
 
@@ -383,7 +511,202 @@ ggplot() +
 ```
 
 
-## *Real* cartography packages:  *tmap* or *cartography*
+
+
+
+## Proportional symbol maps with *cartography*
+
+
+```{r}
+# First: define the shape of the map
+plot(st_geometry(my_geodata),  col= "#f0f0f0", border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+my_symbol <- "circle"   # coud be "square" or "bar"
+my_size <- 0.2
+
+propSymbolsLayer(
+  x = my_geodata, 
+  var = "X2019",
+  inches = my_size,
+  symbols  = my_symbol, 
+  border = "grey",
+  col = "#E84923",
+  lwd = 0.1,
+  legend.pos = c(40,-50),
+  legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size)
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+```
+
+
+```{r}
+# First: define the shape of the map
+plot(st_geometry(my_geodata),  col= "#f0f0f0", border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+my_symbol <- "square"   # coud be "square" or "bar"
+my_size <- 0.3
+
+propSymbolsLayer(
+  x = my_geodata, 
+  var = "X2019",
+  inches = my_size,
+  symbols  = my_symbol, 
+  border = "grey",
+  col = SIAP.color,
+  lwd = 0.1,
+  legend.pos = c(40,-50),
+  legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size)
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+```
+
+
+```{r}
+# First: define the shape of the map
+plot(st_geometry(my_geodata),  col= "#f0f0f0", border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+my_symbol <- "bar"   # coud be "square" or "bar"
+my_size <- 0.6
+
+propSymbolsLayer(
+  x = my_geodata, 
+  var = "X2019",
+  inches = my_size,
+  symbols  = my_symbol, 
+  border = "grey",
+  col = "#E84923",
+  lwd = 0.1,
+  legend.pos = c(40,-50),
+  legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size)
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+```
+
+
+
+
+### Mixing colors and size...
+
+```{r}
+library(lwgeom)
+
+# First: define the shape of the map
+plot(st_geometry(my_geodata),   col= "#f0f0f0",  border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+
+my_classes <- 8
+my_method <-  "quantile"
+
+propSymbolsChoroLayer(
+  x = my_geodata, 
+  var = "X2019",
+  var2 = "X2019",
+  method = "equal",
+  nclass= my_classes,
+  inches = 0.2,
+  col = heat.colors(my_classes),
+  colNA	= "grey",
+  border = "grey",
+  lwd = 0.5,
+  legend.var.pos = c(40,-50),
+  legend.var.title.txt = paste("Method:", my_method,",", my_classes,"classes"), 
+  legend.var2.pos =  "n"
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+
+```
+
+
+
+
+```{r}
+
+# First: define the shape of the map
+plot(st_geometry(my_geodata),   col= "#f0f0f0",  border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+
+my_classes <- 8
+my_method <-  "quantile"
+
+propSymbolsChoroLayer(
+  x = my_geodata, 
+  var = "X2019",
+  var2 = "X2019",
+  method = "equal",
+  symbols = "square",
+  nclass= my_classes,
+  col = heat.colors(my_classes),
+  colNA	= "grey",
+  border = "grey",
+  lwd = 0.5,
+  legend.var.pos = c(40,-50),
+  legend.var.title.txt = paste("Method:", my_method,",", my_classes,"classes"), 
+  legend.var2.pos =  "n"
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+
+```
+
 
 
 
@@ -392,6 +715,76 @@ ggplot() +
 ```{r}
 knitr::knit_exit()
 ```
+
+
+
+
+
+
+### hexbins
+
+```{r, eval = FALSE}
+library(cartography)
+my_grid <- getGridLayer(
+  x = my_geodata, 
+  cellsize = 500 , 
+  var = "X2019",
+  type = "hexagonal"
+)
+
+plot(st_geometry(my_geodata),
+     col= "#f0f0f0",
+     border = "black", 
+     bg = "#aadaff")
+
+choroLayer(
+  x = my_geodata, 
+  var = "X2019",
+  method = my_grid,
+  nclass= my_classes,
+  # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
+  col = heat.colors(my_classes),
+  colNA	= "grey",
+  border = "grey", 
+  lwd = 0.5,
+  legend.pos = c(40,-50), 
+  legend.horiz = TRUE, 
+  legend.title.txt = paste("Method:", my_method,",", my_classes,"classes"),
+  add = TRUE
+) 
+
+# Third: add  layout
+layoutLayer(title = paste(sdg_label, "in 2019"),
+            col = "grey",
+            frame = FALSE, 
+            tabtitle = TRUE,
+            posscale =  c(10, 40), 
+            north = FALSE, # would be on top right, 
+            )
+# north arrow
+north(pos = "topleft")
+
+
+
+```
+
+
+
+
+## Proportional symbols
+
+```{r}
+tmap_mode("plot")
+
+tm_shape(my_geodata) +
+   tm_borders("grey", lwd = .5) +
+  # tm_text("ABBREV", size = "AREA") +
+  tm_bubbles(size = "X2019", scale = 0.5) +
+  tm_legend(show = TRUE)
+```
+
+
+
 
 
 
