@@ -80,13 +80,13 @@ SDGdata1 <- SDG1 %>%
   )%>%
   distinct()
 
-# ---------------------------------# 
+# ---------------------------------# lab3 <- "Infant mortality"
+unit3 <- "(deaths per 1,000 live births)"
 # Mortality Rate: (3.2.1)  Infant mortality rate (deaths per 1,000 live births)
 SDG3<- readxl::read_xlsx("RawData/Goal3.xlsx", 
                              col_names = TRUE, sheet = "data")
 
-lab3 <- "Infant mortality"
-unit3 <- "(deaths per 1,000 live births)"
+
 
 # /!\ there are units in the downloaded raw data set!
 SDGdata3 <- SDG3 %>%
@@ -603,7 +603,7 @@ my_highlow <- c('#fc8d59','#ffffbf','#91bfdb')
 mosaicplot(table(SDGAgg$Region, rev(SDGAgg$GHG_class)),
   #color = TRUE,
   #shade = FALSE,
-   col = my_highlow, 
+  col = my_highlow, 
   main = "Countries classification in GHG emissions per region", 
   xlab = "Regions", # label for x-axis
   ylab = paste("Countries classification", "\n (High Medium, Low)") # label for y-axis
