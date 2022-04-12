@@ -1,0 +1,186 @@
+---
+title: "Pie Charts"
+subtitle: "Why compaairing them is a nightmare"
+author: "Christophe Bontemps (UN SIAP)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+  html_notebook: default
+  pdf_document: 
+    keep_tex: yes  ## keep images in folder + latex
+---
+
+
+```{r setup, include=FALSE}
+# Remeber to disable png for Word export...
+knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
+                       results =FALSE, echo = FALSE,
+                       dev="png", 
+                       dev.args=list(type="cairo"), dpi=96)
+
+# My colors:
+SIAP.color <- "#0385a8"
+
+# Function used to recreate ggplot standard colors
+ggplotColours <- function(n = 6, h = c(0, 360) + 15){
+  if ((diff(h) %% 360) < 1) h[2] <- h[2] - 360/n
+  hcl(h = (seq(h[1], h[2], length = n)), c = 100, l = 65)
+}
+
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(viridis)
+library(ggthemes)
+
+
+library(hrbrthemes)
+library(viridis)
+library(patchwork)
+
+```
+
+## Data set {-}
+Let's say we have observed 5 categories  from 3 countries
+```{r Data}
+# create 3 data frame:
+data1 <- data.frame( name=letters[1:5], value=c(17,18,20,22,24) )
+data2 <- data.frame( name=letters[1:5], value=c(20,18,21,20,20) )
+data3 <- data.frame( name=letters[1:5], value=c(24,23,21,19,18) )
+```
+
+## Classical pie chart by country {-}  
+```{r SinglePie}
+# From-data-to viz https://www.data-to-viz.com/caveat/pie.html
+myPalette <-  c('#fdbf6f', '#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c')
+myPalette1 <-  c('#fdbf6f', '#a6cee3','#b2df8a',"grey",'#e31a1c')
+myPalette2 <-  c('#fdbf6f', '#a6cee3','pink',"grey",SIAP.color)
+myPalette3 <- c(SIAP.color, "grey", "orange", "darkred", "black")
+#myPalette4 <- c("lightyellow", "yellow",'#b2df8a','#33a02c','#fb9a99','#e31a1c', "orange")
+
+
+
+plot_pie <- function(data, vec){
+
+ggplot(data, aes(x="name", y=value, fill=name)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0, direction = -1) +
+  scale_fill_manual("Categories",values=myPalette2) +
+  geom_text(aes(y = vec, label = rev(name), size=4, color=c( "white", rep("black", 4)))) +
+  scale_color_manual(values=c("black", "white")) +
+  theme_minimal() +
+  theme(
+    legend.position="none",
+    plot.title = element_text(size=14),
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    legend.margin=unit(0, "null")
+  ) +
+  xlab("") +
+  ylab("")
+  
+}
+
+# First country
+plot_pie(data1, c(10,35,55,75,93))
+
+```
+
+# All countries compared with Pies {-}
+
+
+```{r 3Pies}
+p1 <- plot_pie(data1, c(10,35,55,75,93))
+p2 <- plot_pie(data2, c(10,35,53,75,93))
+p3  <- plot_pie(data3, c(10,29,50,75,93))
+p1 + p2 + p3 + 
+ plot_annotation(tag_levels = 'I')
+```
+
+# All countries compared with Bars {-}
+
+
+```{r 3barsV}
+# A function to make vertical barplots
+plot_bar_V <- function(data){
+  ggplot(data, aes(x=name, y=value, fill=name)) +
+    geom_bar( stat = "identity") +
+    scale_fill_manual("Categories",values=myPalette2) +
+    scale_color_manual(values=c("black", "white")) +
+    theme_minimal() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14),
+      panel.grid = element_blank(),
+    ) +
+    ylim(0,25) +
+    xlab("") +
+    ylab("")
+}
+
+# Make 3 barplots
+bar1v <- plot_bar_V(data1)
+bar2v <- plot_bar_V(data2)
+bar3v <- plot_bar_V(data3)
+
+# Put them together with patchwork
+bar1v + bar2v + bar3v + 
+ plot_annotation(tag_levels = 'I')
+```
+
+
+# All countries compared with *horizontal* bars {-}
+
+
+```{r 3bars}
+# A function to make vertical barplots
+plot_bar_H <- function(data){
+  ggplot(data, aes(x=fct_rev(name), y=value, fill= name)) +
+    geom_bar( stat = "identity") +
+    scale_fill_manual("Categories",values=myPalette2) +
+    scale_color_manual(values=c("black", "white")) +
+    coord_flip()+
+    theme_minimal() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=14),
+      panel.grid = element_blank(),
+    ) +
+    ylim(0,25) +
+    xlab("") +
+    ylab("")
+}
+
+# Make 3 barplots
+bar1h <- plot_bar_H(data1)
+bar2h <- plot_bar_H(data2)
+bar3h <- plot_bar_H(data3)
+
+# Put them together with patchwork
+bar1h  /bar2h  / bar3h + 
+ plot_annotation(tag_levels = 'I')
+```
+
+#  Comparisons {-}
+
+```{r Compare1}
+(p1+p1+p3)  / (( bar1v + bar2v+ bar3v)  +  plot_layout(tag_level = 'new')) +
+  plot_annotation(tag_levels = list(c('I', 'II', "III"), c('', '', "III")))
+
+
+```
+
+
+```{r Compare2}
+(p1 + bar1h) /
+(p2 + bar2h) /
+(p3 + bar3h)
+
+```
+
