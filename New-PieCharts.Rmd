@@ -1,6 +1,6 @@
 ---
 title: "Pie Charts"
-subtitle: "Why compaairing them is a nightmare"
+subtitle: "Why Pie Chart is a nightmare"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -182,5 +182,117 @@ bar1h  /bar2h  / bar3h +
 (p2 + bar2h) /
 (p3 + bar3h)
 
+```
+
+# Multiple categories pie charts
+
+
+
+
+```{r}
+library(tidyverse)
+
+# Defining my palettes
+myPalette11 <- c(
+  '#b2df8a',  # light green
+  '#cab2d6',  # lavender
+  '#ffff99',  # pastel yellow
+  '#fdbf6f',  # light orange (repeated if intentional, can adjust)
+  '#fb9a99',  # salmon pink
+  '#1f78b4',  # steel blue
+  'grey',  # lighter red
+  '#b2df8a',  # pastel green
+  '#fdbf6f',  # light orange
+  '#a6cee3',  # soft blue
+  'pink'     # soft pink
+)
+
+myPalette4 <-  c(
+'pink',  '#a6cee3','#fdbf6f',"grey"
+)
+               
+myPalette4I <-  c(
+"grey",  '#fdbf6f', '#a6cee3','pink'
+)
+               
+
+
+```
+
+
+```{r}
+# Data generation 
+set.seed(123)
+product_data <- tibble(
+  category = c("Rice",  "Textiles", 
+               "Tea", "Rubber", "Spices", "Coconuts", 
+               "Fish", "Handicrafts", "Fruits", "Bamboo", "Electronics"),
+  value = c(35, 25, 20, runif(8, 1, 5))
+) %>%
+  arrange(desc(value)) %>%
+  mutate(
+    percent = value / sum(value),
+    label = paste0(category, "\n", round(100 * percent), "%"),
+    category = fct_reorder(category, value)
+  )
+
+```
+
+
+### Ploting all categories
+
+
+```{r}
+product_data %>%
+  ggplot(aes(x = "", y = value, fill = category)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  scale_fill_manual("Categories",values=myPalette11) +
+  geom_text(aes(label = category),
+            position = position_stack(vjust = 0.5),
+            size = 4,
+            color = "black", alpha = 0.8) +
+  theme_void() +
+  ggtitle("All Product Categories (Ordered)") +
+  theme(legend.position = "none")
+
+```
+
+
+
+### Ploting with aggreagted categories
+
+
+```{r}
+# Choose top 3 as "main"
+main_categories <- product_data %>%
+  top_n(3, value) %>%
+  pull(category)
+
+# Recode other categories as "Misc"
+collapsed_data <- product_data %>%
+  mutate(category = if_else(category %in% main_categories, category, "Misc")) %>%
+  group_by(category) %>%
+    summarise(value = sum(value), .groups = "drop") %>%
+  ungroup() %>%
+   mutate(
+  category = fct_relevel(category, "Misc", "Tea", "Textiles", "Rice")
+  )
+   
+
+# Pie chart with collapsed categories
+collapsed_data %>%
+  ggplot(aes(x = "", y = value, fill = category)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  scale_fill_manual(values = myPalette4I) +
+  geom_text(aes(label = category),
+            position = position_stack(vjust = 0.5),
+            size = 5,
+            color = "black") +
+ 
+  theme_void() +
+  ggtitle("Main Categories with Misc") +
+  theme(legend.position = "none")
 ```
 
