@@ -208,11 +208,11 @@ myPalette11 <- c(
 )
 
 myPalette4 <-  c(
-'pink',  '#a6cee3','#fdbf6f',"grey"
+'pink',  '#a6cee3','#fdbf6f',"lightgrey"
 )
                
 myPalette4I <-  c(
-"grey",  '#fdbf6f', '#a6cee3','pink'
+"lightgrey",  '#fdbf6f', '#a6cee3','pink'
 )
                
 
@@ -253,7 +253,7 @@ product_data %>%
             size = 4,
             color = "black", alpha = 0.8) +
   theme_void() +
-  ggtitle("All Product Categories (Ordered)") +
+  ggtitle("Pie Chart with 11  Product Categories (Ordered)") +
   theme(legend.position = "none")
 
 ```
@@ -290,9 +290,8 @@ collapsed_data %>%
             position = position_stack(vjust = 0.5),
             size = 5,
             color = "black") +
- 
   theme_void() +
-  ggtitle("Main Categories with Misc") +
+  ggtitle('Pie Chart with only 4 categories, including a "Misc" category ') +
   theme(legend.position = "none")
 ```
 
