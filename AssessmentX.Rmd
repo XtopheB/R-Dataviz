@@ -1,16 +1,14 @@
 ---
-title: "Data-Dased Assessment Report Example"
-subtitle: "(*Just a proposal: Other solutions exist!*)" 
-author: "Christophe Bontemps (UN SIAP)"
+title: "Data-Dased Assessment Report "
 output:
+  pdf_document:
+    keep_tex: yes
+  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
-  html_notebook: default
-  pdf_document:
-    keep_tex: yes
   word_document: default
 ---
 
@@ -66,7 +64,7 @@ unit6 <- "(% of pop.)"
 lab13 <- "Total GHG"
 unit13 <- "(Mt CO₂ equivalent)"
 ```
-This report is just my personal view on how I would have handled these data sets, and what type of graphics I would have used. This is **not**  what you should have done, nor the ultimate answer to the questions asked. Please consider it as an example of what one may expect and **not** as the reference for assessing your peers. 
+
 
 # First part
 

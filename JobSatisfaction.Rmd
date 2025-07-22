@@ -74,7 +74,7 @@ t <-  kbl(MyData)
 kable_styling(t,full_width = F )
 
 # Keeping the data in CSV for exercises
-write.csv(MyData  , file = "JobSatisfaction.csv")
+# write.csv(MyData  , file = "JobSatisfaction.csv")
 
 ```
 ## What are the legitimate questions?  {-}

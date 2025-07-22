@@ -18,7 +18,7 @@ output:
 ```{r setup, include=FALSE}
 # Remember to disable png for Word export...
 knitr::opts_chunk$set( message = FALSE, warning = FALSE, 
-                       results =FALSE, echo = FALSE,
+                       results =FALSE, echo = TRUE,
                        dev="png", 
                        dev.args=list(type="cairo"), dpi=96)
 

@@ -1,11 +1,11 @@
 ---
 title: "The problem with stacked area charts"
 author: "Christophe Bontemps (UN SIAP)"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document: 
-    keep_tex: yes  ## keep images in folder + latex
+  word_document: default
   html_notebook: default
+  pdf_document:
+    keep_tex: yes
   html_document:
     code_folding: show
     highlight: tango
@@ -45,7 +45,8 @@ library(forcats)
 library(knitr)
 library(kableExtra)
 # Additionnal 
-#devtools::install_github("wilkelab/ungeviz")
+# library(devtools)
+# devtools::install_github("wilkelab/ungeviz")
 library(ungeviz)
 
 ```
@@ -93,7 +94,7 @@ A first, natural idea could be to draw a *stacked area chart*, like this one.
 MyData %>% 
   ggplot( aes(x=Year, y=Share, fill=Region)) +
     geom_area( ) +
-    scale_fill_manual(values = wes_palette("Royal1"))+
+    scale_fill_manual(values = wes_palette("Royal1")[c(1,2,4)] )+
   ggtitle(" Shares for different regions over time [2000-2006]")+
      geom_text(data = MyData %>% 
               filter(Year == 2002)%>%
@@ -101,7 +102,9 @@ MyData %>%
             aes(label = rev(Region), 
                 x = Year , 
                 y = value - 8), 
-                color = wes_palette("Royal2")[3], size =6) + 
+               # color = wes_palette("Royal2")[c(3,2,3)],
+            color = "white",
+            size =6) + 
     theme_tufte() +
     theme(legend.position="none")
 ```
@@ -141,11 +144,11 @@ The first idea could be to do the simplest graphic possible with such data, and 
     geom_text(data = MyData %>% 
               filter(Year == 2005)%>%
               mutate(value = Share), 
-            aes(label = rev(Region), 
+            aes(label = Region, 
                 x = Year +0.5 , 
                 y = value, color = Region),
             size =4) + 
-    scale_color_manual(values = wes_palette("Royal1")) +
+    scale_color_manual(values = wes_palette("Royal1")[c(1,2,4)]) +
     theme_tufte() +
     theme(legend.position="none")
 ```
@@ -163,11 +166,11 @@ We may also emphasize the fact that we only observed data for 6 years using a *c
     geom_text(data = MyData %>% 
               filter(Year == 2005)%>%
               mutate(value = Share), 
-            aes(label = rev(Region), 
+            aes(label = Region, 
                 x = Year +0.5 , 
                 y = value, color = Region),
             size =4) + 
-    scale_color_manual(values = wes_palette("Royal1")) +
+    scale_color_manual(values = wes_palette("Royal1")[c(1,2,4)]) +
     theme_tufte() +
     theme(legend.position="none")
 ```
@@ -184,11 +187,11 @@ Since lines always induce some kind of link from one point to another, we may wa
     geom_text(data = MyData %>% 
               filter(Year == 2005)%>%
               mutate(value = Share), 
-            aes(label = rev(Region), 
+            aes(label = Region, 
                 x = Year +0.7 , 
                 y = value, color = Region),
             size =4) + 
-    scale_color_manual(values = wes_palette("Royal1")) +
+    scale_color_manual(values = wes_palette("Royal1")[c(1,2,4)]) +
     theme_tufte() +
     theme(legend.position="none")
 ```
@@ -207,7 +210,7 @@ One of the options would be to keep the idea of *area chart* but using a *small 
     geom_area(aes(colour = Region), colour = "grey", size =1, alpha = 0.8) +
     ggtitle(" Shares for different regions over time [2000-2006]")+
     facet_wrap(vars(Region), nrow = 2)+
-    scale_fill_manual(values = wes_palette("Royal1"))+
+    scale_fill_manual(values = wes_palette("Royal1")[c(1,2,4)])+
     theme_tufte() +
     theme(legend.position="none")
 ```
@@ -229,8 +232,10 @@ One of the options would be to keep the idea of *area chart* but using a *small 
             aes(label = rev(Region), 
                 x = Year , 
                 y = value - 5), 
-                color = wes_palette("Royal2")[3], size =4) + 
-    scale_fill_manual(values = wes_palette("Royal1"))+
+                #color = wes_palette("Royal2")[3],
+                color = "white",
+                size =4) + 
+    scale_fill_manual(values = wes_palette("Royal1")[c(1,2,4)])+
     theme_tufte() +
     theme(legend.position="none")
 g
@@ -259,7 +264,9 @@ Plot.colors <- unique(ggplot_build(g)$data[[1]]$fill)
             aes(label = c("Region B", "Region C", " Region A"), 
                 x = Year , 
                 y = value - 5), 
-                color = wes_palette("Royal2")[3], size =4) + 
+                #color = wes_palette("Royal2")[3],
+                color = "white",
+                size =4) + 
     scale_fill_manual(values = c(Plot.colors[1],
                                  Plot.colors[3],
                                  Plot.colors[2]))+
@@ -303,7 +310,9 @@ p<-  ggplot( MyData, aes(x=Year, y=Share, fill=Region2)) +
             aes(label = c("Region B", "Region C", " Region A"), 
                 x = Year + 0.5, 
                 y = value - 3), 
-                color = wes_palette("Royal2")[3], size =4) + 
+                #color = wes_palette("Royal2")[3],
+                color = "white",
+                size =4) + 
     scale_fill_manual(values = c(Plot.colors[1],
                                  Plot.colors[3],
                                  Plot.colors[2]))+

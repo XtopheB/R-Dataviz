@@ -1,16 +1,16 @@
 ---
-title: "Create (beautiful) maps with R"
+title: "Interactive Graphics with R"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  pdf_document:
+    keep_tex: yes
+  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
-  html_notebook: default
-  pdf_document:
-    keep_tex: yes
   word_document: default
 ---
 
@@ -46,9 +46,6 @@ library(viridis)
 ```
 # Useful sources {-}
 
-* [**Fundamentals of Data Visualization**](https://clauswilke.com/dataviz/index.html) by Claus O. Wilke
-* [**Geocomputation with R**](https://geocompr.robinlovelace.net/index.html) Robin Lovelace, Jakub Nowosad, Jannes Muenchow, a,d in particular the chapter [*Making maps with R*](https://geocompr.robinlovelace.net/adv-map.html) 
-* Kieran Healy's [**Data Visualization book**](https://socviz.co/maps.html#maps) chapter on maps
 
 ### On ggplot{-}
 
@@ -56,104 +53,159 @@ library(viridis)
 
 
 ## Data sets {-}
-* We use the data from  [Natural Earth Data](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/) for 
-*all countries*, and in particular the shapefiles *ne_10m_admin_0_countries.shp*. The maps include not only the shape  of the countries but also some other variables. The projection used is the WGS84 (World Geodetic System 1984) that [preserves areas and distances](https://en.wikipedia.org/wiki/World_Geodetic_System#Longitudes_on_WGS_84). 
 
-* For the SDG, we use the SDG 5.5.1 indicator  (*SG_GEN_PARL_ap.csv*) available  as a CSV file from [UNSSTAT database](https://unstats.un.org/SDGS/Indicators/Database/) 
-
+* We use data from [Gapminder website](https://www.gapminder.org/data/). For each of 142
+countries, we collected values for CO2 emmissions (tonnes per person)  and Income per person (GDP per capita, adjusted in 2011 USD)
 *The data sets can also be downloaded from the course LMS*
 
 
-# Using the shape files and the *sf* library
+```{r}
+Data_Income <- read.csv(file ="Data/M6-GapminderIncome.csv") %>%
+   pivot_longer(!country, names_to = "year", values_to = "Income") %>%
+  mutate(
+    year = str_sub(year,2)
+  )%>%
+  filter(
+    year >= 1990
+  )
 
-*We use the tutorial provided by [Atlan](https://atlan.com/courses/introduction-to-gis-r/lesson2-manipulating-geospatial-data/)*
+Data_CO2<-  read.csv(file ="Data/M6-GapminderCO2.csv")  %>%
+  pivot_longer(!country, names_to = "year", values_to = "CO2")%>%
+  mutate(
+    year = str_sub(year,2)
+  )%>%
+  filter(
+    year >= 1990
+  )
+
+Data_Pop<-  read.csv(file ="Data/M6-GapminderPopulation.csv")%>%
+  pivot_longer(!country, names_to = "year", values_to = "Population")%>%
+  mutate(
+    year = str_sub(year,2)
+  )%>%
+  filter(
+    year >= 1990
+  )
+
+GapminderData = merge(Data_Income, Data_CO2, by = c("country", "year"))
+GapminderData = merge(GapminderData, Data_Pop, by = c("country", "year"))
 
 
-The *sf* (Simple Features) package is the successor to the *sp* package. It allows to work in the *tidy* framework using spatial data frames. Therefore, one can use the pipe an other tidy tools to  manipulate an sf object like an ordinary data frame, or at least one with a few special characteristics.
+CountryClassification <- read.csv("Data/UNSDCountriesMethodology.csv") %>%
+  select(
+    Country.or.Area, Region.Name, Sub.region.Name
+  ) %>%
+  rename(
+    Region = Region.Name
+  ) 
+MyData = merge(GapminderData, CountryClassification, by.x = "country", by.y= "Country.or.Area")
 
-
-```{r Data}
-library(sf)
-
-#loading Shapefiles
-my_sf <- st_read("Data/Maps/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
-
-
-# CRS used in this spatial data frame
-st_crs(my_sf)
 
 ```
 
 
-
-
-> One can extract the geometry from the Spatial data.frame to see the shapes of the map
 
 ```{r}
-# Extract only the geometry with sf:st_geometry
 
-my_geometry <- st_geometry(my_sf)
-plot(my_geometry, main = "Map Geometry")
+library(ggplot2)
 
+ggplot(MyData) +
+ aes(x = Income) +
+ geom_histogram(bins = 59L, fill = SIAP.color, color = "white") +
+ scale_y_continuous( limits = c(0, 70))+
+ theme_minimal() +
+ theme(legend.position = "top") 
+#+  facet_wrap(vars(Region), nrow = 2L)
 
 ```
 
-There are many information already in the shapefile, we can plot 9 of them here (by default).
+
+
 
 ```{r}
-plot(my_sf)
+p <- MyData %>%
+ ggplot( aes(Income, CO2, size = Population, color=Region)) +
+ geom_point( alpha = 0.2) +
+ #geom_smooth(span = 0.75) +
+ scale_color_brewer(palette = "Set3") +
+ labs(x = "Income (GDP per capita)", 
+      y = "CO2 emissions (tonnes per capita) ",
+      title = "CO2 emission and Income over time",
+      caption = "Source: Gapminder", 
+      color = "Region",
+      size = "Population ") +
+ theme_minimal() +
+ theme(legend.position = "bottom")
+  
+p
 ```
 
-... or just one... 
+
+# Interactivty with plotly
+
+
+
 
 ```{r}
-plot(my_sf["POP_EST"], 
-     key.pos = 1,
-     key.width = lcm(1.3), 
-     key.length = 0.5,
-     main = "Population (est. 2017)")
+library(plotly)
+
+ggplotly(p)
+
 ```
 
- We can also restrict the map to the region of the world we want. 
- 
+
+
+# Shiny
+
+Shiny will need the data set, so let's save it in the directory of the Shiny app called *"MyFirstShiny"*
+It is quite mandatory to have the [Shiny Cheat sheet](https://shiny.rstudio.com/images/shiny-cheatsheet.pdf) at hand
+
+
 ```{r}
-my_map <- my_sf %>%
-  filter(CONTINENT == "Asia" )
-
-plot(my_map["POP_EST"], 
-     key.pos = 1,
-     key.width = lcm(1.3), 
-     key.length = 0.5,
-     main = "Population (est. 2017)")
-
+write.csv(MyData, file ="Data/M6-IncomeCO2-Data.csv", sep = ";")
 ```
 
 
-# Merging Spatial data sets
-
-Here we already have a spatial data object that has its own projection system ( WGS 84). We will merge this  spatial data frame  with a data set where the SDG indicator of interest (5.5.1) is recorded at the at the country level. The merging variable will be the name of the country, so there is no need here to worry about the projection  and the adjustment of the spatial units reference since only one file is using a projection system.   
-
-
-##  The SDG Indicator data set
-
-An overview of the main variables of this data set. The variable *GeoAreaName* will serve as key for merging. 
-
-```{r, echo =TRUE}
-my_sdg <- read.csv("Data/Maps/SG_GEN_PARL_ap.csv", sep = ",")
-sdg_label <- "Seats held by women in national parliaments (%)"
-
-toshow <- c("Indicator", "GeoAreaName", "Units", "X2019" )
-t <-  kbl(my_sdg[1:10,toshow])
-kable_styling(t,full_width = F, )
-
+```{r}
+knitr::knit_exit()
 ```
+
+
+
+
+First, let us extract the R  code from this file  
+```{r}
+
+purl("M6-InteractivedataVisualization.Rmd")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## The Spatial data Frame (shape file)
 
 The original file contains many variables with administrative information,some statistics (population, GDP, income, ... ) that are not useful for our work. Moreover, we can reduce the size of the map to include only the countries that we focus on. 
 
-```{r}
+```{r, results = "asis"}
 # We can only keep the variables and region we need...
 SFvariables <- c("NAME_LONG", "ABBREV", "ADM0_A3", "REGION_UN",  "geometry" )
 
