@@ -2,10 +2,10 @@
 title: "The problem with stacked area charts"
 author: "Christophe Bontemps (UN SIAP)"
 output:
-  word_document: default
-  html_notebook: default
   pdf_document:
     keep_tex: yes
+  html_notebook: default
+  word_document: default
   html_document:
     code_folding: show
     highlight: tango
@@ -126,6 +126,43 @@ So, even if the design of this graphic is appealing, we can notice several probl
  - The values of the shares for each region are not easy to compute.
  
  > **How could the reader compare each share or estimate their values?** 
+ 
+## The Reader's problem
+
+
+```{r StackedAreaV}
+#plot
+MyData %>% 
+  ggplot( aes(x=Year, y=Share, fill=Region)) +
+    geom_area( ) +
+    scale_fill_manual(values = wes_palette("Royal1")[c(1,2,4)] )+
+   geom_text(data = MyData %>% 
+              filter(Year == 2001)%>%
+              mutate(value = cumsum(rev(Share))), 
+            aes(label = rev(Region), 
+                x = Year , 
+                y = value - 7), 
+               # color = wes_palette("Royal2")[c(3,2,3)],
+            color = "white",
+            size = 5) + 
+    geom_segment(  # Vertical arrows
+    aes(x = 2003, xend = 2003, y = 25, yend = 43),
+    arrow = arrow(ends = "both", type = "closed", length = unit(0.1, "inches")),
+    linewidth = 0.3,
+    color = "black" ) +
+    geom_segment(  # diagonal arrows
+    aes(x = 2003.7, xend = 2004, y = 57, yend = 45),
+    arrow = arrow(ends = "both", type = "closed", length = unit(0.1, "inches")),
+    linewidth = 0.3,
+    color = "black") +
+  annotate("text", x = 2003.5, y = 66, label = "We perceive this", angle = 0, hjust = 0.5, size = 5)+ 
+  annotate("text", x = 2002.5, y = 53, label = "The data shows this", angle = 0, hjust = 0.5, size = 5)+ 
+  
+    ggtitle(" Shares for different regions over time [2000-2006]")+
+    theme_tufte() +
+    theme(legend.position="none")
+```
+
 
 # Some solutions {-}
 
