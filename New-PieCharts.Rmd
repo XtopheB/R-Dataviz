@@ -294,4 +294,60 @@ collapsed_data %>%
   ggtitle('Pie Chart with only 4 categories, including a "Misc" category ') +
   theme(legend.position = "none")
 ```
+# Comparing circles
+
+```{r}
+library(tidyverse)
+
+# Data for one circle
+circle1 <- tibble(
+  angle = seq(0, 2 * pi, length.out = 200),
+  x = 9 * cos(angle),
+  y = 9 * sin(angle)
+)
+
+# Compute area
+area1 <- pi * 9^2
+
+# Plot with annotation
+ggplot(circle1, aes(x, y)) +
+  geom_polygon(fill = "grey70", color = "grey50") +
+  annotate("text", x = 0, y = 0, label = paste0("Area ≈ ", round(area1, 1)), size = 6) +
+  coord_fixed() +
+  theme_void() +
+  ggtitle("One Filled Disk (radius = 9)")
+
+
+
+```
+## 2 discks
+
+```{r}
+# Data for two disks
+circle2 <- tibble(
+  angle = seq(0, 2 * pi, length.out = 200)
+) %>%
+  expand_grid(center_x = c(-7, 7)) %>%
+  mutate(
+    x = center_x + 6 * cos(angle),
+    y = 6 * sin(angle),
+    group = as.factor(center_x)
+  )
+
+# Compute area for each
+area2 <- pi * 6^2
+
+# Plot with annotations
+ggplot(circle2, aes(x, y, group = group)) +
+  geom_polygon(fill = "grey70", color = "grey50") +
+  annotate("text", x = -7, y = 0, label = paste0("Area ≈ ", round(area2, 1)), size = 5) +
+  annotate("text", x = 7, y = 0, label = paste0("Area ≈ ", round(area2, 1)), size = 5) +
+  coord_fixed() +
+  theme_void() +
+  ggtitle("Two Filled Disks (radius = 6)")
+
+
+```
+
+
 
