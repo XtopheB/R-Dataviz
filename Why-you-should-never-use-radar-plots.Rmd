@@ -1,0 +1,397 @@
+---
+title: 'Why you should never use radar plots '
+author: "Xtophe Bontemps"
+date: "March, 2017"
+output:
+  html_document:
+    code_folding: show
+    highlight: tango
+    number_sections: yes
+    theme: lumen
+  html_notebook: default
+  word_document: default
+  pdf_document:
+    keep_tex: yes
+---
+*A post from [data.visualisation.free.fr](http://data.visualisation.free.fr)*
+
+### What is *radar plot*?
+*Radar plots* or *charts*, also called *Spider* or *Web charts*  are very popular tools for representing individuals scores of brands, firms, players recorded or evaluated for different variables, different activities or dimensions. 
+
+A radar plot is a sort **parallel coordinates** plot but using polar coordinates. The axis start from the center of the view and diverge from there to form equi-angular spoke. Each observation (individual) is represented by a line connecting values on each spoke (axis). The global performance is visualized by the total area delimited by the line. People use these representation to compare performances attributed to individuals in a multidimensional space (the categories). 
+
+Let's take the example of *Thom, Johnny, Colin* and *Ed* who have been graded in 4 categories (**A, B, C** and **D**). We may think of musician with different skills regarding **A**ccoustic guitar, **B**ass, **C**horus and **D**rums. The data looks like this: 
+
+
+
+```{r, echo=FALSE, message=FALSE, results ='hide', error =FALSE, warning=FALSE, include = FALSE}
+library (fmsb)
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+
+Thom = c(5,1,4,2)
+Johnny = c(5,4,2,1)
+Colin = c(2,2,3,4)
+Ed =  c( 4,3,2,1)
+
+Radio.Table <- rbind(Thom,Johnny, Colin, Ed)  
+Radio.Table <- as.data.frame(Radio.Table)
+
+colnames(Radio.Table) = list("A","B", "C", "D")
+rownames(Radio.Table) = list("Thom","Johnny" , "Colin", "Ed")
+```
+
+
+```{r, echo=FALSE}
+#show table
+Radio.Table
+
+```
+
+```{r}
+
+#First two rows must show max-min
+# Min.R <- apply(Radio.Table,2,min)
+# Max.R <- apply(Radio.Table,2,max)
+
+#Or decide of a fixed scale (max= 5, min=0)
+Min.R <- rep(0,4)
+Max.R <- rep(5,4)
+
+#Add 2 first rows 
+Radio.Table.Radar <- rbind(Max.R, Min.R,Radio.Table)
+    
+colnames(Radio.Table.Radar) = list("A","B", "C", "D")
+rownames(Radio.Table.Radar) = list("max" , "min", "Thom","Johnny" , "Colin", "Ed")
+
+```
+### Standard overlaid radar plot
+
+Now, let us compare these guys using a Radar Plot. 
+
+````{r , echo=FALSE, results= "hide"}
+#I like to choose my colors!
+#library(wesanderson)
+#Mycol <-wes_palette(n=4, name="Darjeeling")
+
+library(RColorBrewer)
+Mycol <-brewer.pal(n = 4, name = "Set2")
+
+#thanks to Christophe Regouby for his trick on centering to zero!
+radarchart(Radio.Table.Radar, 
+           axistype=0, pty=32, plty=1,  plwd=2, axislabcol="grey", na.itp=FALSE,
+           pcol=Mycol,
+           cglty = 3, cglwd = 2, cglcol = "grey", 
+           centerzero=TRUE ,
+ title="Scores of Thom, Johnny, Colin and Ed ")
+
+````
+### Small multiples are more usefull
+The overlapping of the curves on this graphic does not allow an easy comparison of the scores, so let us split this graph into 4 graphs (using a *Small multiple* approach), each graph representing the radar plot of a member of the band.   
+
+```{r, results="hide"}
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:4, ncol=2)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:4, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table[i,]), 
+               seg=4, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity=50, pfcol=Mycol[i],
+                centerzero=TRUE ,
+               title= paste("Score of", rownames(Radio.Table[i,]),""))
+  })
+```
+
+### The Radar plot does not represent truthfully the data 
+Let us compute the area of the radar plot for each of the 4 guys here.  Since we only have 4 categories here, the area is very simple. It is defined as half the area of the square containing the radar plot, or, denoting by (a, b, c, d) the length of each branch, that is the score for each variable, we have:
+
+$$area = \frac{(a+c)*(b+d)}{2}$$
+Another way of finding this result is to compute the area of the 4 triangles (rectangle in 0) forming the radar plot surface.
+
+```{r}
+Score.Table <-Radio.Table %>%
+  mutate(
+    score.total = Radio.Table[,"A"]+ Radio.Table[,"B"] + Radio.Table[,"C"]+ Radio.Table[,"D"] ,  
+    area = 0.5*(Radio.Table[,"A"]+ Radio.Table[,"C"])*(Radio.Table[,"B"]+ Radio.Table[,"D"])
+  )
+
+colnames(Score.Table) = list("A","B", "C", "D", "Total", "area")
+rownames(Score.Table) = list("Thom","Johnny" , "Colin", "Ed")
+
+Score.Table 
+
+```
+
+If we focus on Thom and Johnny,  we clearly see that the sum of their scores is identical while there is a big difference in the area representing their scores. There is clearly a **lying factor** here. The ranking of the total scores is not preserved by the graph, since in terms of areas we have the order from best to lowest: 
+
+1. Johnny, 
+2. Colin 
+3. Thom, and 
+4. Ed, 
+
+with a huge difference in the area, not reflecting the real scores differences (only 2 points difference between highest and lowest). 
+
+```{r}
+Score.Table$Names <- rownames(Score.Table)
+ggplot(data=Score.Table, aes(x= Names, y=area )) + 
+    geom_bar(colour= "white",  fill = rev(Mycol) , width=.5, stat="identity") + 
+    xlab("Band") + ylab("Radar plot area") +
+    scale_x_discrete(limits=rev(rownames(Score.Table)))+
+    ggtitle("Radar plot area (order A, B, C, D) ") +
+    coord_flip()
+```
+
+
+
+### Impact of the axis order
+Now let us redefine the axis and switch  **B** and **C** on the radar plot:
+
+```{r}
+Radio.Table.New <- Radio.Table[c("A", "C", "B", "D")]
+Radio.Table.New
+
+```
+
+And now let us see who's seem to be the best.
+
+
+```{r, results= "hide"}
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:4, ncol=2)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:4, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table.New[i,]), 
+               seg=5, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity=50, pfcol=Mycol[i], 
+               centerzero=TRUE ,
+               title= paste("Score of", rownames(Radio.Table.New[i,]),""))
+  })
+```
+
+###The whole picture has changed
+Now, it seems that the respective areas of each members have changed. Let us recompute the areas. 
+
+
+```{r}
+Score.Table.New <-Radio.Table.New %>%
+  mutate(
+    score.total = Radio.Table.New[,"A"]+ Radio.Table.New[,"B"] + Radio.Table.New[,"C"]+ Radio.Table.New[,"D"] ,  
+    area = 0.5*(Radio.Table.New[,"A"]+ Radio.Table.New[,"B"])*(Radio.Table.New[,"C"]+ Radio.Table.New[,"D"])
+  )
+
+colnames(Score.Table.New) = list("A","C", "B", "D", "Total", "area")
+rownames(Score.Table.New) = list("Thom","Johnny" , "Colin", "Ed")
+
+Score.Table.New
+
+```
+
+The area representing the scores of Thom has changed from 13.5 to 18, while Johnny's area has shrink from 17.5 to 13.5. That is less than Colin. Ed is still last. The order has changed with the change of axis, now the ranking is: 
+
+1. Thom
+2. Colin
+3. Johnny, and
+4. Ed
+
+Look at the new values of radar plot areas
+
+```{r}
+#NB: I have to reverse colors because of coord_flip
+Score.Table.New$Names <- rownames(Score.Table.New)
+ggplot(data=Score.Table.New, aes(x= Names, y=area, fill=Names )) + 
+    geom_bar(colour= "white", fill=rev(Mycol), width=.5, stat="identity") +
+    scale_x_discrete(limits=rev(rownames(Score.Table)))+
+    xlab("Band") + ylab("Radar plot area") +
+    ggtitle("Radar plot area with the new axis order (A, C, B, D) ") +
+    coord_flip()
+```
+
+
+
+
+
+### An alternative: Parallel Coordinate Plot
+
+We may use a different type of graph to have a better view of this difficult case. One example is the *Parallel Coordinate Plot* proposed in the *MASS* library in R. Radar plot and Parallel Coordinate Plot are quite similar in spirit. The advantage of the latter lies in its simplicity and in the absence of artificial area representation spoiling the perception of the global performance. Contrary to the radar plot, the comparison of each individual is done *on vertical axis*, the connecting lines showing some evolution of the scores from on axis to the other.  So, here again, the order of the axis may change the view, and can help detect patterns,  but **will not affect the comparison**.  
+
+Note that this standard graph propose **different scales for each axis**, ranging from min to max. In our case, the second axis ("B") has a maximum of 4, while the first ranges from 1 to 5. So, the global comparison is still far from obvious. 
+
+### So who is the best?
+
+We see that the orange line (*Johnny*)  **strictly dominates** the pink line (*Ed*). This something easy to see in the table, whatever the ranking of columns, *Johnny* has always a score greater than *Ed*. We couldn't easily see that striking result in the radar plot. 
+
+The blue  (*Colin*) and orange (*Johnny*) lines have opposite results. We also see that it is difficult to compare the green (*Thom*) and orange (*Johnny*) lines, since the corresponding band members **have exactly the same scores**, but not for the same variables. Contrary to what the radar plot showed, none is globally better. That's also a result clearly emphasized by this (imperfect) graph. 
+
+```{r, echo=FALSE, message=FALSE, results ='hide', error =FALSE, warning=FALSE, include = FALSE}
+library(MASS)
+```
+
+```{r}
+parcoord(Radio.Table[1:4,], col=Mycol, lwd=3, var.label=TRUE)
+
+```
+>Or even Better, we could use *small multiples*
+
+```{r}
+toto <- c(6,6,6,6)
+Radio.Table2 <- rbind(Radio.Table, toto)
+par(mfrow=c(2,2))
+parcoord(Radio.Table[c(1,3),], col=c(Mycol[1], "white"), lwd=3, var.label=TRUE)
+parcoord(Radio.Table[2:3,], col=c(Mycol[2], "white"), lwd=3, var.label=TRUE)
+parcoord(Radio.Table[3:4,], col=c(Mycol[3], "white"), lwd=3, var.label=TRUE)
+parcoord(Radio.Table[3:4,], col=c("white", Mycol[4]), lwd=3, var.label=TRUE)
+
+
+```
+
+
+
+
+
+
+### Conclusion: Comparison is still difficult...
+
+But we have a more faithful comparison of the 4 guys here, and we do not rely on false global measure implicitly over- or under-representing the values used for comparison. 
+
+That's why I suggest to **avoid using radar plots**!
+
+
+<!-- ```{r} -->
+<!-- #Alternative way of plotting using ggplot -->
+<!-- library(GGally) -->
+<!-- ggparcoord(data = Radio.Table, columns = 1:4, scale = "globalminmax") -->
+
+<!-- ``` -->
+
+***
+
+## Even more missleading: Same example with 5 axis
+
+We can redo the example of Thom, Johnny, Colin and Ed who have been graded now in 5 categories (A, B, C, D and E). The data are exactly the same, except that we gave a score of 2 for a fifth variable. 
+
+
+```{r}
+library (fmsb)
+library(ggplot2)
+library(ggthemes)
+
+Thom = c(5,1,4,2, 2)
+Johnny = c(5,4,2,1,2)
+Colin = c(2,2,3,4,2)
+Ed =  c( 4,3,2,1,2)
+
+Radio.Table5 <- rbind(Thom,Johnny, Colin, Ed)  
+Radio.Table5 <- as.data.frame(Radio.Table5)
+
+colnames(Radio.Table5) = list("A","B", "C", "D", "E")
+rownames(Radio.Table5) = list("Thom","Johnny" , "Colin", "Ed")
+
+#show table
+Radio.Table5
+
+```
+
+```{r}
+
+#First two rows must show max-min
+# Min.R <- apply(Radio.Table5,2,min)
+# Max.R <- apply(Radio.Table5,2,max)
+
+#Or decide of a fixed scale (max= 5, min=0)
+Min.R <- rep(0,5)
+Max.R <- rep(5,5)
+
+#Add 2 first rows 
+Radio.Table5 <- rbind(Max.R, Min.R,Radio.Table5)
+    
+colnames(Radio.Table5) = list("A","B", "C", "D", "E")
+rownames(Radio.Table5) = list("max" , "min", "Thom","Johnny" , "Colin", "Ed")
+
+```
+
+Again, comparing the performance of these guys using a Radar Plot provides a very biased visual comparison, since the areas do not reflect the overall scores.  
+
+````{r , echo=FALSE, results= "hide"}
+radarchart(Radio.Table5, 
+           axistype=0, pty=32, plty=1,  plwd=2, axislabcol="grey", na.itp=FALSE,
+           cglty = 3, cglwd = 2, cglcol = "grey", 
+           pcol= Mycol, 
+            centerzero=TRUE ,
+           title="Scores of Thom, Johnny, Colin and Ed ")
+
+````
+
+
+```{r, results="hide"}
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:4, ncol=2)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:4, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table5[i+2,]), 
+               seg=5, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity =50, pfcol=Mycol[i], 
+                centerzero=TRUE ,
+               title= paste("Score of", rownames(Radio.Table5[i+2,]),""))
+  })
+```
+
+
+
+Now let us redefine the axis so that axis B and D do not have the position on the radar plot:
+
+```{r}
+Radio.Table5.New <- Radio.Table5[c("A", "D", "C", "B", "E")]
+Radio.Table5.New[3:6,]
+
+```
+
+And now let us see who's seem to be the best.
+
+
+```{r, results= "hide"}
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:4, ncol=2)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:4, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table5.New[i+2,]), 
+               seg=5, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity =50, pfcol=Mycol[i], 
+                centerzero=TRUE ,
+               title= paste("Score of", rownames(Radio.Table5.New[i+2,]),""))
+  })
+```
+
+So, ordering the members on the basis of these plots, comparing multidimensional scores, remains a very difficult task. The radar plot certainly does not help.
+
+
+***
+*Done in Toulouse (France), by [Xtophe](mailto:Xtophe.Bontemps@free.fr). Usual citation policy and disclaimer apply. Comments on my [twitter account](https://twitter.com/Xtophe_Bontemps) are welcome* 
+
+
+
+
+<!-- ```{r} -->
+<!-- library(MASS) -->
+
+<!-- parcoord(Radio.Table5[3:6,], col=c(1, 2, 3, 4), lwd=3, var.label=TRUE) -->
+
+<!-- ``` -->
+
+
+
+
+
+
