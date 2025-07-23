@@ -253,7 +253,7 @@ product_data %>%
             size = 4,
             color = "black", alpha = 0.8) +
   theme_void() +
-  ggtitle("Pie Chart with 11  Product Categories (Ordered)") +
+#  ggtitle("Pie Chart with 11  Product Categories (Ordered)") +
   theme(legend.position = "none")
 
 ```
@@ -291,10 +291,27 @@ collapsed_data %>%
             size = 5,
             color = "black") +
   theme_void() +
-  ggtitle('Pie Chart with only 4 categories, including a "Misc" category ') +
+ # ggtitle('Pie Chart with only 4 categories, including a "Misc" category ') +
   theme(legend.position = "none")
 ```
-# Comparing circles
+## Alternative to pie chart
+
+```{r}
+collapsed_data %>%
+  ggplot(aes(x= "" , y = value, fill = category)) +
+  geom_bar(position="stack", stat="identity", width = 0.2) +
+  scale_fill_manual(values = myPalette4I) +
+  geom_text(aes(label = category),
+            position = position_stack(vjust = 0.5),
+            size = 5,
+            color = "black") +
+  theme_void() +
+#  ggtitle('Stacked bar as alternative to Pie Chart with only 4 categories') +
+  theme(legend.position = "none")
+```
+
+
+# Comparing areas (circles)
 
 ```{r}
 library(tidyverse)
