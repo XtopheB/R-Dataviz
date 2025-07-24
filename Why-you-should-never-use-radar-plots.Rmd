@@ -381,16 +381,50 @@ So, ordering the members on the basis of these plots, comparing multidimensional
 *Done in Toulouse (France), by [Xtophe](mailto:Xtophe.Bontemps@free.fr). Usual citation policy and disclaimer apply. Comments on my [twitter account](https://twitter.com/Xtophe_Bontemps) are welcome* 
 
 
+# New version for IAOS with 2 regions
 
 
-<!-- ```{r} -->
-<!-- library(MASS) -->
+```{r, results= "hide"}
+# Only 2 individuals:  Original ordering 
+Radio.Table2 <- Radio.Table5[3:4,]
+row.names(Radio.Table2) <- c("North", "South")
+  
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:2, ncol=1)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:2, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table2[i,]), 
+               seg=5, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity=50, pfcol=Mycol[i], 
+               centerzero=TRUE ,
+               title= paste( rownames(Radio.Table2[i,]),"Region"))
+  })
+```
 
-<!-- parcoord(Radio.Table5[3:6,], col=c(1, 2, 3, 4), lwd=3, var.label=TRUE) -->
-
-<!-- ``` -->
 
 
+```{r, results= "hide"}
+# Only 2 individuals
+Radio.Table2.New <- Radio.Table5.New[3:4,]
+row.names(Radio.Table2.New) <- c("North", "South")
+
+par(mar=c(1, 2, 2, 1)) #decrease default margin
+layout(matrix(1:2, ncol=1)) #draw 4 plots to device
+#loop over rows to draw them, add 1 as max and 0 as min for each var
+lapply(1:2, function(i) { 
+    radarchart(rbind(Max.R, Min.R, Radio.Table2.New[i,]), 
+               seg=5, 
+               axistype=0, pty=32, plty=1, axislabcol="grey", na.itp=FALSE,
+               cglty = 3, cglwd = 1, cglcol = "grey", 
+               pcol= Mycol[i],
+               pdensity=50, pfcol=Mycol[i], 
+               centerzero=TRUE ,
+              title= paste( rownames(Radio.Table2[i,]),"Region"))
+  })
+```
 
 
 
