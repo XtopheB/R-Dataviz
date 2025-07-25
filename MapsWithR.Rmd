@@ -834,7 +834,7 @@ my_geodata_world %>%
   geom_col() +
   aes(x = Country, y = PercentMen)+
   geom_bar(stat = "identity", fill = SIAP.color) +
-  labs(title = "Percentage of seats held by <span style='color:#057AA1;'>men</span> in national parliaments") +
+  labs(title = "Percentage of seats held by <span style='color:#057AA1;; font-weight:bold;'>men</span> in national parliaments") +
   geom_hline(yintercept = 50, color = "darkred", size = 1.5 ) +
   coord_flip() +
   theme_minimal() +
@@ -843,6 +843,45 @@ my_geodata_world %>%
   ) +
   theme(legend.position = "bottom",
         legend.title = element_text(color = SIAP.color, size = 10)) 
+
+```
+
+
+```{r}
+# First: define the shape of the map
+plot(st_geometry(my_geodata),  col= "#f0f0f0", border = "black",   bg = "#aadaff")
+
+# Second: Plot symbols with choropleth coloration
+my_symbol <- "bar"   # coud be "square" or "bar"
+my_size <- 0.3
+
+my_geodata <- my_geodata %>%
+  mutate (percentMen = 100 -X2019)
+
+
+propSymbolsLayer(
+  x = my_geodata, 
+  var = "PercentMen",
+  inches = my_size,
+  symbols  = my_symbol, 
+  border = "grey",
+  col = SIAP.color,
+  lwd = 0.1,
+  #legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size),
+  legend.title.txt = "Percentages (Men)",
+  legend.pos = c(40,-50)
+) 
+
+# Third: add  layout
+# layoutLayer(title = paste(sdg_label, "in 2019"),
+#             col = "grey",
+#             frame = FALSE,
+#             tabtitle = TRUE,
+#             posscale =  c(10, 40),
+#             north = FALSE, # would be on top right,
+#             )
+# north arrow
+north(pos = "topleft")
 
 ```
 
