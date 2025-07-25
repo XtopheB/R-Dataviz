@@ -868,7 +868,7 @@ propSymbolsLayer(
   col = SIAP.color,
   lwd = 0.1,
   #legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size),
-  legend.title.txt = "Percentages (Men)",
+  legend.title.txt = "Percentages",
   legend.pos = c(40,-50)
 ) 
 
@@ -882,6 +882,59 @@ propSymbolsLayer(
 #             )
 # north arrow
 north(pos = "topleft")
+
+```
+
+
+
+```{r}
+
+# First: define the shape of the map
+plot(st_geometry(my_geodata),   col= "#f0f0f0",  border = "black",   bg = "#aadaff")
+
+# Define new variable to plot
+my_geodata <- my_geodata %>%
+  mutate(PercentMen = 100 - X2019)
+
+
+# Second: Plot symbols with choropleth coloration
+my_symbol <- "bar"   # coud be "square" or "bar"
+my_size <- 0.4
+my_classes <- 3
+my_method <-  "quantile"
+my_highlow <- c("navyblue",'#91bfdb', '#fc8d59')
+my_2 <- c(SIAP.color , "darkred")
+my_3 <- c('#67a9cf','#ffffbf', '#ef8a62' )
+
+propSymbolsChoroLayer(
+  x = my_geodata, 
+  var = "PercentMen",
+  var2 = "PercentMen",
+  method = "equal",
+  inches = my_size,
+  symbols  = my_symbol, 
+  nclass= my_classes,
+  col = my_3,
+  colNA	= "grey",
+  border = "grey",
+  lwd = 0.5,
+  legend.var.pos = c(30,-50),
+  legend.var.title.txt = "Percentage of seats held by men \nin national parliaments", 
+  legend.var2.pos =  c(60-50),
+) 
+
+# Third: add  layout
+layoutLayer(
+        title = "" , #paste(sdg_label, "in 2019"),
+        #col = "grey",
+        frame = FALSE, 
+        tabtitle = FALSE,
+        posscale =  c(40, -52), 
+        north = FALSE, # would be on top right, 
+            )
+# north arrow
+#north(pos = "topleft")
+
 
 ```
 
