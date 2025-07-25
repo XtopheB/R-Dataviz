@@ -798,5 +798,55 @@ library(RColorBrewer)
 my_highlow <- c('#fc8d59','#ffffbf','#91bfdb')
 ```
 
+# Alternative representation of SDG 5.5.1
+
+```{r}
+my_geodata_world %>%
+  arrange(X2019) %>%
+  filter(!is.na(X2019)) %>%
+  mutate(Country = factor(NAME, levels = NAME)) %>%
+  ggplot() +
+  aes(x = Country, y = X2019)+
+  geom_bar(stat = "identity", fill = SIAP.color) +
+  ggtitle(sdg_label) + 
+  labs( y= "")+
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(color = SIAP.color, size = 10)) +
+  coord_flip()
+
+```
+
+
+# Now the real information
+
+
+```{r}
+library(ggtext)
+
+my_geodata_world %>%
+  filter(!is.na(X2019)) %>%
+  arrange(desc(X2019)) %>%
+  mutate(
+    PercentMen = 100 - X2019,  
+    Country = factor(NAME, levels = NAME)) %>%
+  ggplot() +
+  geom_col() +
+  aes(x = Country, y = PercentMen)+
+  geom_bar(stat = "identity", fill = SIAP.color) +
+  labs(title = "Percentage of seats held by <span style='color:#057AA1;'>men</span> in national parliaments") +
+  geom_hline(yintercept = 50, color = "darkred", size = 1.5 ) +
+  coord_flip() +
+  theme_minimal() +
+  theme(
+    plot.title = element_markdown(size = 14, face = "bold")  # enables colored 'men'
+  ) +
+  theme(legend.position = "bottom",
+        legend.title = element_text(color = SIAP.color, size = 10)) 
+
+```
+
+
+
 
 
