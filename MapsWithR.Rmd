@@ -3,14 +3,14 @@ title: "Create (beautiful) maps with R"
 author: "Christophe Bontemps (UN SIAP)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  pdf_document:
-    keep_tex: yes
-  html_notebook: default
   html_document:
     code_folding: show
     highlight: tango
     number_sections: yes
     theme: lumen
+  html_notebook: default
+  pdf_document:
+    keep_tex: yes
   word_document: default
 ---
 
@@ -158,9 +158,7 @@ The original file contains many variables with administrative information,some s
 SFvariables <- c("NAME_LONG", "ABBREV", "ADM0_A3", "REGION_UN",  "geometry" )
 
 my_sf_asia <- my_sf %>%
-  filter(CONTINENT == "Asia" | CONTINENT =="Oceania"
-         ) %>%
-  select(SFvariables)
+  filter(CONTINENT == "Asia" | CONTINENT =="Oceania") 
 
 
 t <-  kbl(my_sf_asia[1:10,])
@@ -174,7 +172,7 @@ kable_styling(t,full_width = F, )
 # Merging the geo spatial data wit SDG data at the country level
 
 my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName") %>%
-  st_crop(c(xmin= 00, xmax = 500, ymin = -50,  ymax = 70))
+  st_crop(c(xmin= 00, xmax = 180, ymin = -50,  ymax = 70))  # Cropping to get Asia-Pacific
 
 ```
 
@@ -574,10 +572,10 @@ propSymbolsLayer(
 # Third: add  layout
 layoutLayer(title = paste(sdg_label, "in 2019"),
             col = "grey",
-            frame = FALSE, 
+            frame = FALSE,
             tabtitle = TRUE,
-            posscale =  c(10, 40), 
-            north = FALSE, # would be on top right, 
+            posscale =  c(10, 40),
+            north = FALSE, # would be on top right,
             )
 # north arrow
 north(pos = "topleft")
@@ -651,13 +649,13 @@ propSymbolsChoroLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
-            col = "grey",
-            frame = FALSE, 
-            tabtitle = TRUE,
-            posscale =  c(10, 40), 
-            north = FALSE, # would be on top right, 
-            )
+# layoutLayer(title = paste(sdg_label, "in 2019"),
+#             col = "grey",
+#             frame = FALSE, 
+#             tabtitle = TRUE,
+#             posscale =  c(10, 40), 
+#             north = FALSE, # would be on top right, 
+#             )
 # north arrow
 north(pos = "topleft")
 
