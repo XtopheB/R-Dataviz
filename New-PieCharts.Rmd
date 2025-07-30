@@ -215,7 +215,10 @@ myPalette4I <-  c(
 "lightgrey",  '#fdbf6f', '#a6cee3','pink'
 )
                
-
+myPalette4Ordered <-  c(
+'pink', "lightgrey",  '#a6cee3', '#fdbf6f'
+)
+               
 
 ```
 
@@ -309,6 +312,31 @@ collapsed_data %>%
 #  ggtitle('Stacked bar as alternative to Pie Chart with only 4 categories') +
   theme(legend.position = "none")
 ```
+
+
+
+```{r}
+
+collapsed_data %>%
+   mutate(category = fct_reorder(category, value, .desc = TRUE)) %>%
+   ggplot(aes(x = factor(1), y = value, fill = category)) +
+  geom_bar(stat = "identity", 
+           width = 0.8, 
+           position = position_dodge(width = 0.8)) +
+  scale_fill_manual(values = myPalette4Ordered) +
+  geom_text(aes(label = category),
+            position = position_dodge(width = 0.8),
+            vjust = +3.5,
+            size = 5,
+            color = "black") +
+  theme_void() +
+  theme(legend.position = "none") +
+  coord_fixed(ratio = 0.01) +
+  theme_void() +
+#  ggtitle('Stacked bar as alternative to Pie Chart with only 4 categories') +
+  theme(legend.position = "none")
+```
+
 
 
 # Comparing areas (circles)
