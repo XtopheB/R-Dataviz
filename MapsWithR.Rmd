@@ -833,7 +833,7 @@ my_geodata_world %>%
   ggplot() +
   geom_col() +
   aes(x = Country, y = PercentMen)+
-  geom_bar(stat = "identity", fill = SIAP.color) +
+  geom_bar(stat = "identity", fill = SIAP.color, alpha  = 0.8) +
   labs(title = "Percentage of seats held by <span style='color:#057AA1;; font-weight:bold;'>men</span> in national parliaments") +
   geom_hline(yintercept = 50, color = "darkred", size = 1.5 ) +
   coord_flip() +
@@ -938,6 +938,11 @@ layoutLayer(
 
 ```
 
+```{r}
+# Just to know the values for each class 
+# With 3 classes, the high color is (0.75 and then 91 % in the data set)
+quantile(my_geodata$PercentMen, na.rm = TRUE, probs = c(0.25, 0.5, 0.75))
+```
 
 
 
