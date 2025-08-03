@@ -706,19 +706,6 @@ north(pos = "topleft")
 ```
 
 
-
-
-
-
-```{r}
-knitr::knit_exit()
-```
-
-
-
-
-
-
 ### hexbins
 
 ```{r, eval = FALSE}
@@ -769,7 +756,7 @@ north(pos = "topleft")
 
 
 
-## Proportional symbols
+## Proportional symbols with tmap
 
 ```{r}
 tmap_mode("plot")
@@ -777,7 +764,7 @@ tmap_mode("plot")
 tm_shape(my_geodata) +
    tm_borders("grey", lwd = .5) +
   # tm_text("ABBREV", size = "AREA") +
-  tm_bubbles(size = "X2019", scale = 0.5) +
+  tm_bubbles(size = "X2019", scale = 0.9) +
   tm_legend(show = TRUE)
 ```
 
@@ -847,45 +834,6 @@ my_geodata_world %>%
 ```
 
 
-```{r}
-# First: define the shape of the map
-plot(st_geometry(my_geodata),  col= "#f0f0f0", border = "black",   bg = "#aadaff")
-
-# Second: Plot symbols with choropleth coloration
-my_symbol <- "bar"   # coud be "square" or "bar"
-my_size <- 0.3
-
-my_geodata <- my_geodata %>%
-  mutate (percentMen = 100 -X2019)
-
-
-propSymbolsLayer(
-  x = my_geodata, 
-  var = "PercentMen",
-  inches = my_size,
-  symbols  = my_symbol, 
-  border = "grey",
-  col = SIAP.color,
-  lwd = 0.1,
-  #legend.title.txt = paste0("Symbol: ", my_symbol,", size =", my_size),
-  legend.title.txt = "Percentages",
-  legend.pos = c(40,-50)
-) 
-
-# Third: add  layout
-# layoutLayer(title = paste(sdg_label, "in 2019"),
-#             col = "grey",
-#             frame = FALSE,
-#             tabtitle = TRUE,
-#             posscale =  c(10, 40),
-#             north = FALSE, # would be on top right,
-#             )
-# north arrow
-north(pos = "topleft")
-
-```
-
-
 
 ```{r}
 
@@ -944,6 +892,12 @@ layoutLayer(
 quantile(my_geodata$PercentMen, na.rm = TRUE, probs = c(0.25, 0.5, 0.75))
 ```
 
+
+
+
+```{r}
+knitr::knit_exit()
+```
 
 
 
