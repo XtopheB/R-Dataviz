@@ -177,8 +177,6 @@ sdg_label <- as.character(my_sdg$`Indicator Name`[1])
 ```
 
 
-
-
 ## The Spatial data Frame (shape file)
 
 The original file contains many variables with administrative information,some statistics (population, GDP, income, ... ) that are not useful for our work. Moreover, we can reduce the size of the map to include only the countries that we focus on. 
@@ -198,16 +196,28 @@ kable_styling(t,full_width = F, )
 
 
 ```{r}
-
 # Merging the geo spatial data wit SDG data at the country level
 
 # my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName") %>%
 #   st_crop(c(xmin= 00, xmax = 180, ymin = -50,  ymax = 70))  # Cropping to get Asia-Pacific
 
-my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "Country Name")%>%
+# NEW 
+my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "Country Name") %>%
   st_crop(c(xmin= 00, xmax = 180, ymin = -50,  ymax = 70))  # Cropping to get Asia-Pacific
 
 ```
+```{r}
+# Filling missing with previous years. 
+my_geodata <-my_geodata  %>%
+  mutate(
+    X2024 = coalesce(`2024`, `2023`, `2022`, `2021`, `2020`,  `2019`, `2018`, `2017`,  `2016`, `2015`)
+  )
+
+# checking (still some missing)
+any(is.na(my_geodata$X2024))
+
+```
+
 
 After merging at the country level we have now **in  the same spatial data frame** the country shape files and the SDG indicator we want to represent, plus some additional variables such as names, regions etc...
 
@@ -217,11 +227,11 @@ After merging at the country level we have now **in  the same spatial data frame
 ## with *sf*
 
 ```{r}
-plot(my_geodata["X2019"], 
+plot(my_geodata["X2024"], 
      key.pos = 1,
      key.width = lcm(1.3), 
      key.length = 0.5, 
-     main = sdg_label, 
+     main = paste(sdg_label, "\n in 2024" ),
      sub = "(SDG indic. 5.5.1)")
 ```
 
@@ -240,10 +250,10 @@ my_breaks <- "equal"
 my_nb_breaks <- 10
 
 # Manually
-# my_breaks <- c(0,2, 4, 8, 16, 32, 40 )
-# my_nb_breaks <- length(my_breaks) -1
+ my_breaks <- c(0,2,4,8,16,32,64)
+ my_nb_breaks <- length(my_breaks) -1
 
-plot(my_geodata["X2019"], 
+plot(my_geodata["X2024"], 
      nbreaks = my_nb_breaks,
      breaks = my_breaks,
      # pal = heat.colors(my_nb_breaks),
@@ -265,14 +275,15 @@ ggplot can easily represent an *sf* object and represent it as it would for any 
 ```{r}
 library(ggplot2)
 ggplot(my_geodata) + 
-  geom_sf(aes(fill = X2019)) +
+  ggtitle(paste(sdg_label, "in 2024"))+
+  geom_sf(aes(fill = X2024)) +
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")
 ```
 ### A few improvements... {-}
 
 ```{r}
  ggplot(my_geodata) + 
-  geom_sf(aes(fill = X2019)) +
+  geom_sf(aes(fill = X2024)) +
   ggtitle(sdg_label) +
   theme_minimal() +
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
@@ -286,7 +297,7 @@ here we switch to Australia Lambert projection.
 
 ```{r}
 ggplot(my_geodata) + 
-  geom_sf(aes(fill = X2019)) +
+  geom_sf(aes(fill = X2024)) +
   ggtitle(sdg_label) +
   theme_minimal() +
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
@@ -311,7 +322,7 @@ nb_classes <- 8
 Here with `r nb_classes` classes
 
 ```{r}
-my_breaks <- quantile(my_geodata$X2019,
+my_breaks <- quantile(my_geodata$X2024,
                       probs = seq(0, 1, length.out = nb_classes + 1),
                       na.rm = TRUE)
 # Customize the labels
@@ -328,7 +339,7 @@ my_breaks_labels <- my_breaks_labels[1:length(my_breaks_labels)-1]
 ## We have to trasform the percentatges into a categorical variable. 
 my_geodata %>%
   mutate(
-    my_class = cut(X2019, 
+    my_class = cut(X2024, 
                    breaks = my_breaks,
                    labels = my_breaks_labels, 
                    include.lowest = T))   %>%
@@ -349,11 +360,11 @@ ggplot() +
 ```{r}
 # Defining the nb of classes and breakpoints
 nb_classes <- 8
-my_breaks <- quantile(my_geodata$X2019,
+my_breaks <- quantile(my_geodata$X2024,
                       probs = seq(0, 1, length.out = nb_classes + 1),
                       na.rm = TRUE)
 
-my_breaks <-  seq(0, max(my_geodata$X2019, na.rm=T),
+my_breaks <-  seq(0, max(my_geodata$X2024, na.rm=T),
                   length.out = nb_classes + 1)
                     
 
@@ -369,7 +380,7 @@ my_breaks_labels <- my_breaks_labels[1:length(my_breaks_labels)-1]
 ## We have to trasform the percentatges into a categorical variable. 
 my_geodata %>%
   mutate(
-    my_class = cut(X2019, 
+    my_class = cut(X2024, 
                    breaks = my_breaks,
                    labels = my_breaks_labels, 
                    include.lowest = T))   %>%
@@ -395,7 +406,7 @@ library(tmap)
 
 tmap_mode("view")
 tm_shape(my_geodata) +
-  tm_polygons("X2019") +
+  tm_polygons("X2024") +
   tm_facets(by = "REGION_UN", as.layers = TRUE, free.coords = FALSE, drop.units = TRUE) 
 
 
@@ -404,7 +415,7 @@ tm_shape(my_geodata) +
 ```{r}
 tmap_mode("plot")
 tm_shape(my_geodata) +
-  tm_polygons("X2019") +
+  tm_polygons("X2024") +
   tm_facets(by = "REGION_UN")
 ```
 
@@ -412,7 +423,7 @@ tm_shape(my_geodata) +
 ```{r}
 tmap_mode("view")
 tm_shape(my_geodata) +
-  tm_polygons("X2019") +
+  tm_polygons("X2024") +
   tm_facets(by = "REGION_UN", as.layers = TRUE, free.coords = FALSE, drop.units = TRUE) 
 ```
 
@@ -437,7 +448,7 @@ my_method <-  "quantile"
 
 choroLayer(
   x = my_geodata, 
-  var = "X2019",
+  var = "X2024",
   method = my_method,
   nclass= my_classes,
   # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
@@ -446,18 +457,18 @@ choroLayer(
   colNA	= "grey",
   border = "grey", 
   lwd = 0.5,
-  legend.pos = c(40,-50), 
+  legend.pos = c(10,-50), 
   legend.horiz = TRUE, 
   legend.title.txt = paste("Method:", my_method,",", my_classes,"classes"),
   add = TRUE
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE, 
             tabtitle = TRUE,
-            posscale =  c(10, 40), 
+            posscale =  c(10, -20), 
             north = FALSE, # would be on top right, 
             )
 # north arrow
@@ -472,7 +483,8 @@ north(pos = "topleft")
 
 
 ```{r}
-# we need to have the lat and logitude of each countries to be able to place the circles (points) 
+# we need to have the lat and longitude of each countries to be able to place the circles (points) 
+
 world_data <- map_data("world") %>%
   select(region, lat, long) %>%
   group_by(region) %>%
@@ -489,15 +501,18 @@ my_geodata_world <- merge(my_geodata, world_data, by.x= "NAME_LONG", by.y = "reg
 my_geodata_world %>%
 ggplot() + 
  geom_sf( color = "grey", fill = "white")+
- geom_point(aes(x=my_long, y=my_lat, size= X2019),
+ geom_point(aes(x=my_long, y=my_lat, size= X2024),
             color = SIAP.color ,
             stroke=F, 
             alpha=0.5) +
 
   ggtitle(sdg_label) + 
+  labs(subtitle = "In 2024")+
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
   theme_minimal() +
   theme(legend.position = "bottom",
+       # panel.grid.major = element_blank(), # Removes major grid lines
+       # panel.grid.minor = element_blank() ,
         legend.title = element_text(color = SIAP.color, size = 10))
 ```
 
@@ -528,10 +543,10 @@ ggplot(data.frame(x     = 0,
 
 ```{r}
 my_geodata_world %>%
-  mutate(area_X2019 = sqrt(X2019))%>%
+  mutate(area_X2024 = sqrt(X2024))%>%
 ggplot() + 
  geom_sf( color = "grey", fill = "white") +
- geom_point(aes(x=my_long, y=my_lat, size= area_X2019),
+ geom_point(aes(x=my_long, y=my_lat, size= area_X2024),
             color = SIAP.color ,
             alpha=0.5) +
   scale_size_area() +
@@ -559,7 +574,7 @@ my_size <- 0.2
 
 propSymbolsLayer(
   x = my_geodata, 
-  var = "X2019",
+  var = "X2024",
   inches = my_size,
   symbols  = my_symbol, 
   border = "grey",
@@ -570,11 +585,11 @@ propSymbolsLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE, 
             tabtitle = TRUE,
-            posscale =  c(10, 40), 
+            posscale =  c(40, -10), 
             north = FALSE, # would be on top right, 
             )
 # north arrow
@@ -593,7 +608,7 @@ my_size <- 0.3
 
 propSymbolsLayer(
   x = my_geodata, 
-  var = "X2019",
+  var = "X2024",
   inches = my_size,
   symbols  = my_symbol, 
   border = "grey",
@@ -604,11 +619,11 @@ propSymbolsLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE,
             tabtitle = TRUE,
-            posscale =  c(10, 40),
+             posscale =  c(40, -10), 
             north = FALSE, # would be on top right,
             )
 # north arrow
@@ -627,7 +642,7 @@ my_size <- 0.6
 
 propSymbolsLayer(
   x = my_geodata, 
-  var = "X2019",
+  var = "X2024",
   inches = my_size,
   symbols  = my_symbol, 
   border = "grey",
@@ -638,11 +653,11 @@ propSymbolsLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE, 
             tabtitle = TRUE,
-            posscale =  c(10, 40), 
+             posscale =  c(40, -10), 
             north = FALSE, # would be on top right, 
             )
 # north arrow
@@ -668,8 +683,8 @@ my_method <-  "quantile"
 
 propSymbolsChoroLayer(
   x = my_geodata, 
-  var = "X2019",
-  var2 = "X2019",
+  var = "X2024",
+  var2 = "X2024",
   method = "equal",
   nclass= my_classes,
   inches = 0.2,
@@ -683,13 +698,13 @@ propSymbolsChoroLayer(
 ) 
 
 # Third: add  layout
-# layoutLayer(title = paste(sdg_label, "in 2019"),
-#             col = "grey",
-#             frame = FALSE, 
-#             tabtitle = TRUE,
-#             posscale =  c(10, 40), 
-#             north = FALSE, # would be on top right, 
-#             )
+layoutLayer(title = paste(sdg_label, "in 2024"),
+            col = "grey",
+            frame = FALSE,
+            tabtitle = TRUE,
+             posscale =  c(40, -10), 
+            north = FALSE, # would be on top right,
+            )
 # north arrow
 north(pos = "topleft")
 
@@ -711,8 +726,8 @@ my_method <-  "quantile"
 
 propSymbolsChoroLayer(
   x = my_geodata, 
-  var = "X2019",
-  var2 = "X2019",
+  var = "X2024",
+  var2 = "X2024",
   method = "equal",
   symbols = "square",
   nclass= my_classes,
@@ -726,7 +741,7 @@ propSymbolsChoroLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE, 
             tabtitle = TRUE,
@@ -747,7 +762,7 @@ library(cartography)
 my_grid <- getGridLayer(
   x = my_geodata, 
   cellsize = 500 , 
-  var = "X2019",
+  var = "X2024",
   type = "hexagonal"
 )
 
@@ -758,7 +773,7 @@ plot(st_geometry(my_geodata),
 
 choroLayer(
   x = my_geodata, 
-  var = "X2019",
+  var = "X2024",
   method = my_grid,
   nclass= my_classes,
   # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
@@ -773,7 +788,7 @@ choroLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2019"),
+layoutLayer(title = paste(sdg_label, "in 2024"),
             col = "grey",
             frame = FALSE, 
             tabtitle = TRUE,
@@ -798,7 +813,7 @@ tmap_mode("plot")
 tm_shape(my_geodata) +
    tm_borders("grey", lwd = .5) +
   # tm_text("ABBREV", size = "AREA") +
-  tm_bubbles(size = "X2019", scale = 0.9) +
+  tm_bubbles(size = "X2024", scale = 0.9) +
   tm_legend(show = TRUE)
 ```
 
@@ -823,12 +838,12 @@ my_highlow <- c('#fc8d59','#ffffbf','#91bfdb')
 
 ```{r}
 my_geodata_world %>%
-  arrange(X2019) %>%
-  filter(!is.na(X2019)) %>%
+  arrange(X2024) %>%
+  filter(!is.na(X2024)) %>%
   mutate(Country = factor(NAME, levels = NAME)) %>%
   ggplot() +
-  aes(x = Country, y = X2019)+
-  geom_bar(stat = "identity", fill = SIAP.color) +
+  aes(x = Country, y = X2024)+
+  geom_bar(stat = "identity", fill = "darkgreen") +
   ggtitle(sdg_label) + 
   labs( y= "")+
   theme_minimal() +
@@ -846,10 +861,10 @@ my_geodata_world %>%
 library(ggtext)
 
 my_geodata_world %>%
-  filter(!is.na(X2019)) %>%
-  arrange(desc(X2019)) %>%
+  filter(!is.na(X2024)) %>%
+  arrange(desc(X2024)) %>%
   mutate(
-    PercentMen = 100 - X2019,  
+    PercentMen = 100 - X2024,  
     Country = factor(NAME, levels = NAME)) %>%
   ggplot() +
   geom_col() +
@@ -876,7 +891,7 @@ plot(st_geometry(my_geodata),   col= "#f0f0f0",  border = "black",   bg = "#aada
 
 # Define new variable to plot
 my_geodata <- my_geodata %>%
-  mutate(PercentMen = 100 - X2019)
+  mutate(PercentMen = 100 - X2024)
 
 
 # Second: Plot symbols with choropleth coloration
@@ -907,7 +922,7 @@ propSymbolsChoroLayer(
 
 # Third: add  layout
 layoutLayer(
-        title = "" , #paste(sdg_label, "in 2019"),
+        title = "" , #paste(sdg_label, "in 2024"),
         #col = "grey",
         frame = FALSE, 
         tabtitle = FALSE,
