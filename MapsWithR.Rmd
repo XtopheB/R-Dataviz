@@ -913,6 +913,9 @@ my_method <-  "quantile"
 my_highlow <- c("navyblue",'#91bfdb', '#fc8d59')
 my_2 <- c(SIAP.color , "darkred")
 my_3 <- c('#67a9cf','#ffffbf', '#ef8a62' )
+my_uniform_blue3 =  c('#67a9cf', '#67a9cf', '#67a9cf')
+my_uniform_blue3 =  c(SIAP.color, SIAP.color, SIAP.color)
+
 
 propSymbolsChoroLayer(
   x = my_geodata, 
@@ -923,6 +926,7 @@ propSymbolsChoroLayer(
   symbols  = my_symbol, 
   nclass= my_classes,
   col = my_3,
+  #col = my_uniform_blue3,
   colNA	= "grey",
   border = "grey",
   lwd = 0.5,
@@ -937,7 +941,7 @@ layoutLayer(
         #col = "grey",
         frame = FALSE, 
         tabtitle = FALSE,
-        posscale =  c(40, -52), 
+        # posscale =  c(40, -52), 
         north = FALSE, # would be on top right, 
             )
 # north arrow
