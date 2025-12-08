@@ -277,18 +277,24 @@ library(ggplot2)
 ggplot(my_geodata) + 
   ggtitle(paste(sdg_label, "in 2024"))+
   geom_sf(aes(fill = X2024)) +
+   scale_fill_gradient(
+    low = "#fee5d9",   # light red
+    high = "#a50f15",  # dark red
+    name = "Perc. of women\n(Indic. 5.5.1)" ) +
   labs(fill = "Perc. of women \n(Indic. 5.5.1)")
 ```
 ### A few improvements... {-}
 
 ```{r}
  ggplot(my_geodata) + 
+  ggtitle(paste(sdg_label, "in 2024"))+
   geom_sf(aes(fill = X2024)) +
-  ggtitle(sdg_label) +
-  theme_minimal() +
-  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+   scale_fill_gradient(
+    low = "#fee5d9",   # light red
+    high = "#a50f15",  # dark red
+    name = "Perc. of women\n(Indic. 5.5.1)" ) +
   theme(legend.position = "bottom", 
-        legend.title = element_text(color = "#235a91", size = 10))
+        legend.title = element_text(color = "#a50f15", size = 10))
 ```
 
 ### Changing the map projection {-} 
@@ -297,12 +303,17 @@ here we switch to Australia Lambert projection.
 
 ```{r}
 ggplot(my_geodata) + 
+  # ggtitle(paste(sdg_label, "in 2024"))+
   geom_sf(aes(fill = X2024)) +
-  ggtitle(sdg_label) +
-  theme_minimal() +
-  labs(fill = "Perc. of women \n(Indic. 5.5.1)")+
+   scale_fill_gradient(
+    low = "#fee5d9",   # light red
+    high = "#a50f15",  # dark red
+    name = "Perc. of women in parliaments \n(SDG. 5.5.1)" ) +
   theme(legend.position = "bottom", 
-        legend.title = element_text(color = "#235a91", size = 10)) +
+        legend.title = element_text(color = "#a50f15", size = 10), 
+        panel.background = element_rect(fill = "white"), 
+        panel.grid.major = element_line(color = "grey"), 
+        panel.grid.minor = element_line(color = "grey")  ) +
   coord_sf(crs = st_crs(3112))
   
 ```
@@ -464,13 +475,13 @@ choroLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2024"),
-            col = "grey",
-            frame = FALSE, 
-            tabtitle = TRUE,
-            posscale =  c(10, -20), 
-            north = FALSE, # would be on top right, 
-            )
+# layoutLayer(title = paste(sdg_label, "in 2024"),
+#             col = "grey",
+#             frame = FALSE, 
+#             tabtitle = TRUE,
+#             posscale =  c(10, -20), 
+#             north = FALSE, # would be on top right, 
+#             )
 # north arrow
 north(pos = "topleft")
 
@@ -585,13 +596,13 @@ propSymbolsLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2024"),
-            col = "grey",
-            frame = FALSE, 
-            tabtitle = TRUE,
-            posscale =  c(40, -10), 
-            north = FALSE, # would be on top right, 
-            )
+# layoutLayer(title = paste(sdg_label, "in 2024"),
+#             col = "grey",
+#             frame = FALSE, 
+#             tabtitle = TRUE,
+#             posscale =  c(40, -10), 
+#             north = FALSE, # would be on top right, 
+#             )
 # north arrow
 north(pos = "topleft")
 
@@ -653,13 +664,13 @@ propSymbolsLayer(
 ) 
 
 # Third: add  layout
-layoutLayer(title = paste(sdg_label, "in 2024"),
-            col = "grey",
-            frame = FALSE, 
-            tabtitle = TRUE,
-             posscale =  c(40, -10), 
-            north = FALSE, # would be on top right, 
-            )
+# layoutLayer(title = paste(sdg_label, "in 2024"),
+#             col = "grey",
+#             frame = FALSE, 
+#             tabtitle = TRUE,
+#              posscale =  c(40, -10), 
+#             north = FALSE, # would be on top right, 
+#             )
 # north arrow
 north(pos = "topleft")
 
