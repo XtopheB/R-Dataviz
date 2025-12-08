@@ -117,8 +117,23 @@ plot(my_sf["POP_EST"],
  We can also restrict the map to the region of the world we want. 
  
 ```{r}
+# It seems that this exludes many countries
+
+# my_map <- my_sf %>%
+#   filter(CONTINENT == "Asia" )
+
+asia_pacific_countries <- c(
+  "Afghanistan","Armenia","Azerbaijan","Bangladesh","Bhutan","Brunei",
+  "Cambodia","China","Fiji","India","Indonesia","Iran","Japan","Kazakhstan",
+  "Kiribati","Kyrgyzstan","Laos","Malaysia","Maldives","Mongolia","Myanmar",
+  "Nepal","Pakistan","Palau","Papua New Guinea","Philippines","Samoa",
+  "Singapore","Solomon Islands","South Korea","Sri Lanka","Tajikistan",
+  "Thailand","Timor-Leste","Tonga","Turkmenistan","Tuvalu","Uzbekistan",
+  "Vanuatu","Vietnam"
+)
+
 my_map <- my_sf %>%
-  filter(CONTINENT == "Asia" )
+  filter(ADMIN %in% asia_pacific_countries)
 
 plot(my_map["POP_EST"], 
      key.pos = 1,
@@ -141,12 +156,27 @@ An overview of the main variables of this data set. The variable *GeoAreaName* w
 ```{r, echo =TRUE}
 my_sdg <- read.csv("Data/Maps/SG_GEN_PARL_ap.csv", sep = ",")
 sdg_label <- "Seats held by women in national parliaments (%)"
+```
 
-toshow <- c("Indicator", "GeoAreaName", "Units", "X2019" )
-t <-  kbl(my_sdg[1:10,toshow])
-kable_styling(t,full_width = F, )
+
+```{r}
+# NEW (2025)
+# From https://data.worldbank.org/indicator/SG.GEN.PARL.ZS
+# Trick: # Do ot read the  description of the file (first lines are skipped)
+
+my_sdg <- read_csv("Data/Maps/API_SG.GEN.PARL.ZS_DS2_en_csv_v2_2495.csv", skip = 3)  
+sdg_label <- as.character(my_sdg$`Indicator Name`[1])
+```
+
+
+```{r, echo =TRUE}
+# toshow <- c("Indicator", "GeoAreaName", "Units", "X2019" )
+# t <-  kbl(my_sdg[1:10,toshow])
+# kable_styling(t,full_width = F, )
 
 ```
+
+
 
 
 ## The Spatial data Frame (shape file)
@@ -171,7 +201,10 @@ kable_styling(t,full_width = F, )
 
 # Merging the geo spatial data wit SDG data at the country level
 
-my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName") %>%
+# my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "GeoAreaName") %>%
+#   st_crop(c(xmin= 00, xmax = 180, ymin = -50,  ymax = 70))  # Cropping to get Asia-Pacific
+
+my_geodata <- merge(my_sf_asia, my_sdg, by.x= "NAME_LONG", by.y = "Country Name")%>%
   st_crop(c(xmin= 00, xmax = 180, ymin = -50,  ymax = 70))  # Cropping to get Asia-Pacific
 
 ```
