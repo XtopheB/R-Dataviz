@@ -465,7 +465,7 @@ choroLayer(
   # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
   #col = heat.colors(my_classes),
   col = rev(heat.colors(my_classes)),
-  colNA	= "grey",
+  colNA	= "white",
   border = "grey", 
   lwd = 0.5,
   legend.pos = c(10,-50), 
@@ -484,6 +484,8 @@ choroLayer(
 #             )
 # north arrow
 north(pos = "topleft")
+
+
 
 
 ```
