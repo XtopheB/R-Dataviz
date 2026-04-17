@@ -224,6 +224,21 @@ After merging at the country level we have now **in  the same spatial data frame
 
 # Choropleth Maps 
 
+
+```{r FixingVietnam}
+# Vietnam is not in the file !!!
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+
+vietnam <- world %>%
+  filter(name == "Vietnam")
+
+my_geodata <- bind_rows(my_geodata, vietnam)
+```
+
 ## with *sf*
 
 ```{r}
@@ -315,6 +330,7 @@ ggplot(my_geodata) +
         panel.grid.major = element_line(color = "grey"), 
         panel.grid.minor = element_line(color = "grey")  ) +
   coord_sf(crs = st_crs(3112))
+
   
 ```
 
@@ -443,6 +459,7 @@ tm_shape(my_geodata) +
 
 ### with the *Cartography* package 
 
+
 ```{r}
 library(cartography)
 
@@ -465,7 +482,7 @@ choroLayer(
   # col = carto.pal(pal1 = "sand.pal", n1 = nb_classes),
   #col = heat.colors(my_classes),
   col = rev(heat.colors(my_classes)),
-  colNA	= "white",
+  colNA	= "grey",
   border = "grey", 
   lwd = 0.5,
   legend.pos = c(10,-50), 
@@ -484,7 +501,6 @@ choroLayer(
 #             )
 # north arrow
 north(pos = "topleft")
-
 
 
 
@@ -960,10 +976,31 @@ quantile(my_geodata$PercentMen, na.rm = TRUE, probs = c(0.25, 0.5, 0.75))
 
 
 
-
 ```{r}
 knitr::knit_exit()
 ```
+
+
+```{r}
+# Combining plots for IJ IOS
+library(cowplot)
+library(png)
+library(grid)
+
+# Load images
+img1 <- rasterGrob(readPNG("Graphics/Choropleth8ClassesN.png"))
+img2 <- rasterGrob(readPNG("Graphics/ChoroplethContinuousRedN.png"))
+img3 <- rasterGrob(readPNG("Graphics/BubbleMapRedCirclesNew.png"))
+img4 <- rasterGrob(readPNG("Graphics/BubbleMapBarsNew.png"))
+
+# Combine into 2x2
+plot_grid(
+  img1, img2,
+  img3, img4,
+  ncol = 2
+)
+```
+
 
 
 
